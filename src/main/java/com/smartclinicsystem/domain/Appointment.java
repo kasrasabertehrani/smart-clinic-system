@@ -1,5 +1,8 @@
 package com.smartclinicsystem.domain;
 
+import com.smartclinicsystem.domain.exception.AppointmentStateTransitionException;
+import com.smartclinicsystem.domain.exception.InvalidAppointmentDurationException;
+import com.smartclinicsystem.domain.exception.PastAppointmentException;
 import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.TimePeriod;
@@ -26,12 +29,12 @@ public class Appointment {
     public Appointment(PatientId patientId, TimePeriod timePeriod) {
 
         if (timePeriod.startTime().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Appointment time cannot be in the past.");
+            throw new PastAppointmentException();
         }
 
         long durationInMinutes = Duration.between(timePeriod.startTime(), timePeriod.endTime()).toMinutes();
         if (durationInMinutes != 60) {
-            throw new IllegalArgumentException("Appointments must be strictly one hour long.");
+            throw new InvalidAppointmentDurationException();
         }
 
         this.id = new AppointmentId(UUID.randomUUID().toString());
@@ -53,7 +56,7 @@ public class Appointment {
             this.cancelledBy = initiator;
             this.updatedAt = LocalDateTime.now();
         } else {
-            throw new IllegalStateException("Only SCHEDULED or CHECKED_IN appointments can be cancelled.");
+            throw new AppointmentStateTransitionException("Only SCHEDULED or CHECKED_IN appointments can be cancelled.");
         }
     }
     public void complete() {
@@ -62,14 +65,14 @@ public class Appointment {
             updatedAt = LocalDateTime.now();
         }
         else {
-            throw new IllegalStateException("Only CHECKED_IN appointments can be marked as COMPLETED.");
+            throw new AppointmentStateTransitionException("Only CHECKED_IN appointments can be marked as COMPLETED.");
         }
 
     }
 
     public void checkIn() {
         if (this.appointmentStatus != status.SCHEDULED) {
-            throw new IllegalStateException("Can only check-in a SCHEDULED appointment.");
+            throw new AppointmentStateTransitionException("Can only check-in a SCHEDULED appointment.");
         }
         this.appointmentStatus = status.CHECKED_IN;
         this.updatedAt = LocalDateTime.now();
@@ -77,7 +80,7 @@ public class Appointment {
 
     public void markAsNoShow() {
         if (this.appointmentStatus != status.CHECKED_IN) {
-            throw new IllegalStateException("Only CHECKED_IN appointments can be marked as No-Show.");
+            throw new AppointmentStateTransitionException("Only CHECKED_IN appointments can be marked as No-Show.");
         }
         this.appointmentStatus = status.NO_SHOW;
         this.updatedAt = LocalDateTime.now();

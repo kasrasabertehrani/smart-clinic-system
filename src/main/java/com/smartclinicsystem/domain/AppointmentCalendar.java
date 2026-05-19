@@ -1,5 +1,6 @@
 package com.smartclinicsystem.domain;
 
+import com.smartclinicsystem.domain.exception.*;
 import com.smartclinicsystem.domain.vo.*;
 
 import java.time.LocalDate;
@@ -19,15 +20,9 @@ public class AppointmentCalendar {
     }
 
     private void addAppointment(PatientId patientId, TimePeriod appointmentTime) {
-
-        if(isDoctorAvailable(appointmentTime) && isNotAlreadyBooked(appointmentTime) &&
-                isDoctorWorking(appointmentTime)){
+            validateBookingRules(appointmentTime);
             Appointment proposedAppointment = new Appointment(patientId, appointmentTime);
             appointments.add(proposedAppointment);
-        } else {
-            throw new IllegalStateException("Cannot book appointment: Doctor is not available, already booked, " +
-                    "or not working at this time.");
-        }
     }
 
     private void cancelAppointment(AppointmentId appointmentId, Appointment.CancellationInitiator initiator) {
@@ -54,26 +49,20 @@ public class AppointmentCalendar {
                                       Appointment.CancellationInitiator initiator) {
         Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
 
+        if (!oldAppointment.isScheduled() && !oldAppointment.hasCheckedIn() && !oldAppointment.canceledBySystem()) {
+            throw new RescheduleException(
+                    "Appointment can only be rescheduled if it is SCHEDULED, CHECKED_IN, or CANCELLED_BY_SYSTEM.");
+        }
+        validateBookingRules(newTimePeriod);
 
         if (oldAppointment.isScheduled() || oldAppointment.hasCheckedIn()) {
             oldAppointment.cancel(initiator);
         }
-        else if (!oldAppointment.canceledBySystem()) {
-            throw new IllegalStateException("Appointment can only be rescheduled if it is SCHEDULED, CHECKED_IN, or CANCELLED_BY_SYSTEM.");
-        }
-
-        if(isDoctorAvailable(newTimePeriod) && isNotAlreadyBooked(newTimePeriod) &&
-                isDoctorWorking(newTimePeriod)){
-            Appointment rescheduledAppointment = new Appointment(oldAppointment.getPatientId(), newTimePeriod,
-                    oldAppointmentId);
-            appointments.add(rescheduledAppointment);
-        } else {
-            throw new IllegalStateException("Cannot book appointment: Doctor is not available, already booked, " +
-                    "or not working at this time.");
-        }
-
-
+        Appointment rescheduledAppointment = new Appointment(oldAppointment.getPatientId(), newTimePeriod,
+                oldAppointmentId);
+        appointments.add(rescheduledAppointment);
     }
+
 
     private void updateAppointmentsOnNewUnavailability(TimePeriod newLeavePeriod) {
         this.appointments.stream()
@@ -107,7 +96,9 @@ public class AppointmentCalendar {
         EffectiveSchedule activeSchedule = this.effectiveSchedules.stream()
                 .filter(schedule -> schedule.appliesTo(requestedDate))
                 .max(Comparator.comparing(EffectiveSchedule::validFrom))
-                .orElseThrow(() -> new IllegalStateException("No valid schedule found for this date."));
+                .orElseThrow(() -> new NoValidScheduleException(
+                        "Cannot process request: No valid working schedule found for the date " + requestedDate
+                ));
 
         return activeSchedule.schedule().isWorkingDuring(requestedPeriod);
     }
@@ -127,7 +118,21 @@ public class AppointmentCalendar {
         return this.appointments.stream()
                 .filter(app -> app.getId().equals(appointmentId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found in this calendar."));
+                .orElseThrow(() -> new AppointmentNotFoundException(
+                "Appointment with ID " + appointmentId.value() + " was not found in this calendar."
+        ));
+    }
+
+    private void validateBookingRules(TimePeriod requestedTime) {
+        if (!isDoctorWorking(requestedTime)) {
+            throw new OutsideWorkingHoursException("Cannot book: The requested time falls outside working hours.");
+        }
+        if (!isDoctorAvailable(requestedTime)) {
+            throw new DoctorUnavailableException("Cannot book: The doctor is on leave during this time.");
+        }
+        if (!isNotAlreadyBooked(requestedTime)) {
+            throw new SlotAlreadyBookedException("Cannot book: This time slot is already taken.");
+        }
     }
 
 }
