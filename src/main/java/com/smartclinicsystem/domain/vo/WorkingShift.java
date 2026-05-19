@@ -1,15 +1,16 @@
 package com.smartclinicsystem.domain.vo;
 
 
+import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
 
 public record WorkingShift(SharpTime startTime, SharpTime endTime) {
 
     public WorkingShift {
         if (startTime == null || endTime == null) {
-            throw new IllegalArgumentException("Start and end times are required.");
+            throw new InvalidTimePeriodException("Start and end times are required.");
         }
         if (!endTime.time().isAfter(startTime.time())) {
-            throw new IllegalArgumentException("End time must be after start time.");
+            throw new InvalidTimePeriodException("End time must be after start time.");
         }
     }
 
