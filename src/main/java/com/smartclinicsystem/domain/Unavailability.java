@@ -8,13 +8,11 @@ import java.time.LocalDateTime;
 
 @Getter
 public class Unavailability {
-    private final TimePeriod unavailabilityPeriod;
-    private final String reason;
+    private final TimePeriod unavailabilityPeriod;;
     private final LocalDateTime createdAt;
 
-    public Unavailability(TimePeriod unavailabilityPeriod, String reason) {
+    public Unavailability(TimePeriod unavailabilityPeriod) {
         this.unavailabilityPeriod = unavailabilityPeriod;
-        this.reason = reason;
         this.createdAt = LocalDateTime.now();
     }
 

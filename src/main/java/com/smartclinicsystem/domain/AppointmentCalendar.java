@@ -50,7 +50,7 @@ public class AppointmentCalendar {
         Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
 
         if (!oldAppointment.isScheduled() && !oldAppointment.hasCheckedIn() && !oldAppointment.canceledBySystem()) {
-            throw new RescheduleException(
+            throw new BookingException(
                     "Appointment can only be rescheduled if it is SCHEDULED, CHECKED_IN, or CANCELLED_BY_SYSTEM.");
         }
         validateBookingRules(newTimePeriod);
@@ -96,15 +96,15 @@ public class AppointmentCalendar {
         EffectiveSchedule activeSchedule = this.effectiveSchedules.stream()
                 .filter(schedule -> schedule.appliesTo(requestedDate))
                 .max(Comparator.comparing(EffectiveSchedule::validFrom))
-                .orElseThrow(() -> new NoValidScheduleException(
+                .orElseThrow(() -> new InvalidEffectiveScheduleException(
                         "Cannot process request: No valid working schedule found for the date " + requestedDate
                 ));
 
         return activeSchedule.schedule().isWorkingDuring(requestedPeriod);
     }
 
-    public void addUnavailability(TimePeriod leavePeriod, String reason) {
-        this.unavailabilities.add(new Unavailability(leavePeriod, reason));
+    public void addUnavailability(TimePeriod leavePeriod) {
+        this.unavailabilities.add(new Unavailability(leavePeriod));
         updateAppointmentsOnNewUnavailability(leavePeriod);
     }
 
@@ -125,13 +125,13 @@ public class AppointmentCalendar {
 
     private void validateBookingRules(TimePeriod requestedTime) {
         if (!isDoctorWorking(requestedTime)) {
-            throw new OutsideWorkingHoursException("Cannot book: The requested time falls outside working hours.");
+            throw new BookingException("Cannot book: The requested time falls outside working hours.");
         }
         if (!isDoctorAvailable(requestedTime)) {
-            throw new DoctorUnavailableException("Cannot book: The doctor is on leave during this time.");
+            throw new BookingException("Cannot book: The doctor is on leave during this time.");
         }
         if (!isNotAlreadyBooked(requestedTime)) {
-            throw new SlotAlreadyBookedException("Cannot book: This time slot is already taken.");
+            throw new BookingException("Cannot book: This time slot is already taken.");
         }
     }
 
