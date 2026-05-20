@@ -1,9 +1,7 @@
 package com.smartclinicsystem;
 
 import com.smartclinicsystem.domain.Appointment;
-import com.smartclinicsystem.domain.exception.AppointmentStateTransitionException;
-import com.smartclinicsystem.domain.exception.InvalidAppointmentDurationException;
-import com.smartclinicsystem.domain.exception.PastAppointmentException;
+import com.smartclinicsystem.domain.exception.AppointmentException;
 import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.TimePeriod;
@@ -32,7 +30,7 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 16, 16, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
 
-        assertThrows(PastAppointmentException.class, () -> {
+        assertThrows(AppointmentException.class, () -> {
             new Appointment(patientId, timePeriod);
         });
     }
@@ -43,7 +41,7 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 12, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
 
-        assertThrows(InvalidAppointmentDurationException.class, () -> {
+        assertThrows(AppointmentException.class, () -> {
             new Appointment(patientId, timePeriod);
         });
     }
@@ -83,7 +81,7 @@ public class AppointmentTest {
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.checkIn();
         appointment.complete();
-        assertThrows(AppointmentStateTransitionException.class, () -> {
+        assertThrows(AppointmentException.class, () -> {
             appointment.cancel(Appointment.CancellationInitiator.PATIENT);
         });
     }
@@ -110,7 +108,7 @@ public class AppointmentTest {
 
         appointment.cancel(Appointment.CancellationInitiator.PATIENT);
 
-        assertThrows(AppointmentStateTransitionException.class, appointment::checkIn);
+        assertThrows(AppointmentException.class, appointment::checkIn);
     }
 
     @Test
@@ -137,7 +135,7 @@ public class AppointmentTest {
 
         appointment.cancel(Appointment.CancellationInitiator.PATIENT);
 
-        assertThrows(AppointmentStateTransitionException.class, appointment::complete);
+        assertThrows(AppointmentException.class, appointment::complete);
     }
     @Test
     void testMarkOutAsNoShow(){
@@ -163,7 +161,7 @@ public class AppointmentTest {
 
         appointment.complete();
 
-        assertThrows(AppointmentStateTransitionException.class, appointment::markAsNoShow);
+        assertThrows(AppointmentException.class, appointment::markAsNoShow);
     }
     @Test
     void testAppointmentIsScheduled(){
