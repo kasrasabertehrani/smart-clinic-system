@@ -3,6 +3,8 @@ package com.smartclinicsystem.domain.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
 
+import java.time.LocalTime;
+
 public record WorkingShift(SharpTime startTime, SharpTime endTime) {
 
     public WorkingShift {
@@ -14,9 +16,9 @@ public record WorkingShift(SharpTime startTime, SharpTime endTime) {
         }
     }
 
-    public boolean covers(TimePeriod period) {
+    public boolean covers(LocalTime requestedStartTime, LocalTime requestedEndTime) {
 
-        return !period.startTime().toLocalTime().isBefore(this.startTime.time()) &&
-                !period.endTime().toLocalTime().isAfter(this.endTime.time());
+        return !requestedStartTime.isBefore(this.startTime.time()) &&
+                !requestedEndTime.isAfter(this.endTime.time());
     }
 }

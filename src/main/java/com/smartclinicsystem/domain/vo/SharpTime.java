@@ -14,5 +14,12 @@ public record SharpTime(LocalTime time) {
         if (time.getMinute() != 0 || time.getSecond() != 0 || time.getNano() != 0) {
             throw new NotSharpTimeException();
         }
+
+    }
+    public static SharpTime of(int hour) {
+        if (hour < 0 || hour > 23) {
+            throw new IllegalArgumentException("Hour must be between 0 and 23.");
+        }
+        return new SharpTime(LocalTime.of(hour, 0));
     }
 }

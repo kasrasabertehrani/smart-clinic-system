@@ -1,6 +1,9 @@
 package com.smartclinicsystem;
 
 import com.smartclinicsystem.domain.Appointment;
+import com.smartclinicsystem.domain.exception.AppointmentStateTransitionException;
+import com.smartclinicsystem.domain.exception.InvalidAppointmentDurationException;
+import com.smartclinicsystem.domain.exception.PastAppointmentException;
 import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.TimePeriod;
@@ -17,37 +20,57 @@ public class AppointmentTest {
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 15, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 16, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         Appointment appointment = new Appointment(patientId ,timePeriod);
+
         assertEquals(Appointment.status.SCHEDULED, appointment.getAppointmentStatus());
     }
     @Test
-    void testAppointmentOnWrongTimePeriodInPast(){
+    void testAppointmentInPast(){
         PatientId patientId = new PatientId("patient-123");
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 16, 15, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 16, 16, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(PastAppointmentException.class, () -> {
             new Appointment(patientId, timePeriod);
         });
     }
     @Test
-    void testAppointmentOnWrongTimePeriodMoreThanOneHour(){
+    void testAppointmentMoreThanOneHour(){
         PatientId patientId = new PatientId("patient-123");
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 12, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(InvalidAppointmentDurationException.class, () -> {
             new Appointment(patientId, timePeriod);
         });
     }
     @Test
-    void testCancelAppointment(){
+    void testCancelAppointmentOnScheduledStatus(){
         PatientId patientId = new PatientId("patient-123");
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         appointment.cancel(Appointment.CancellationInitiator.PATIENT);
+
+        assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
+    }
+
+    @Test
+    void testCancelAppointmentOnCheckInStatus(){
+        PatientId patientId = new PatientId("patient-123");
+        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
+        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
+        TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+        Appointment appointment = new Appointment(patientId, timePeriod);
+
+        appointment.checkIn();
+        appointment.cancel(Appointment.CancellationInitiator.PATIENT);
+
         assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
     }
 
@@ -60,21 +83,9 @@ public class AppointmentTest {
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.checkIn();
         appointment.complete();
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(AppointmentStateTransitionException.class, () -> {
             appointment.cancel(Appointment.CancellationInitiator.PATIENT);
         });
-    }
-
-    @Test
-    void testCancelOnCheckIn(){
-        PatientId patientId = new PatientId("patient-123");
-        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
-        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
-        TimePeriod timePeriod = new TimePeriod(startTime, endTime);
-        Appointment appointment = new Appointment(patientId, timePeriod);
-        appointment.checkIn();
-        appointment.cancel(Appointment.CancellationInitiator.PATIENT);
-        assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
     }
 
     @Test
@@ -84,7 +95,9 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         appointment.checkIn();
+
         assertEquals(Appointment.status.CHECKED_IN, appointment.getAppointmentStatus());
     }
     @Test
@@ -94,8 +107,10 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         appointment.cancel(Appointment.CancellationInitiator.PATIENT);
-        assertThrows(IllegalStateException.class, appointment::checkIn);
+
+        assertThrows(AppointmentStateTransitionException.class, appointment::checkIn);
     }
 
     @Test
@@ -106,7 +121,9 @@ public class AppointmentTest {
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.checkIn();
+
         appointment.complete();
+
         assertEquals(Appointment.status.COMPLETED, appointment.getAppointmentStatus());
     }
 
@@ -117,8 +134,10 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         appointment.cancel(Appointment.CancellationInitiator.PATIENT);
-        assertThrows(IllegalStateException.class, appointment::complete);
+
+        assertThrows(AppointmentStateTransitionException.class, appointment::complete);
     }
     @Test
     void testMarkOutAsNoShow(){
@@ -128,7 +147,9 @@ public class AppointmentTest {
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.checkIn();
+
         appointment.markAsNoShow();
+
         assertEquals(Appointment.status.NO_SHOW, appointment.getAppointmentStatus());
     }
     @Test
@@ -139,8 +160,10 @@ public class AppointmentTest {
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.checkIn();
+
         appointment.complete();
-        assertThrows(IllegalStateException.class, appointment::markAsNoShow);
+
+        assertThrows(AppointmentStateTransitionException.class, appointment::markAsNoShow);
     }
     @Test
     void testAppointmentIsScheduled(){
@@ -148,7 +171,9 @@ public class AppointmentTest {
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         assertTrue(appointment.isScheduled());
     }
 
@@ -158,8 +183,10 @@ public class AppointmentTest {
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         Appointment appointment = new Appointment(patientId, timePeriod);
         appointment.cancel(Appointment.CancellationInitiator.SYSTEM_AUTOMATION);
+
         assertTrue(appointment.canceledBySystem());
     }
     @Test
@@ -168,7 +195,9 @@ public class AppointmentTest {
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         assertFalse(appointment.canceledBySystem());
     }
     @Test
@@ -178,7 +207,9 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         AppointmentId appointmentId = new AppointmentId("appointment-123");
+
         Appointment appointment = new Appointment(patientId, timePeriod, appointmentId);
+
         assertEquals(appointmentId, appointment.getRescheduledFromId());
     }
     @Test
@@ -188,7 +219,9 @@ public class AppointmentTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         appointment.checkIn();
+
         assertTrue(appointment.hasCheckedIn());
     }
     @Test
@@ -197,7 +230,9 @@ public class AppointmentTest {
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         Appointment appointment = new Appointment(patientId, timePeriod);
+
         assertFalse(appointment.hasCheckedIn());
     }
 

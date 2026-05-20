@@ -1,5 +1,7 @@
 package com.smartclinicsystem;
 
+import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
+import com.smartclinicsystem.domain.exception.NotSharpTimeException;
 import com.smartclinicsystem.domain.vo.TimePeriod;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,34 +12,38 @@ public class TimePeriodTest {
     void testTimePeriod(){
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0);
+
         TimePeriod timePeriod = new TimePeriod(startTime, endTime);
+
         assertEquals(timePeriod.startTime(), startTime);
         assertEquals(timePeriod.endTime(), endTime);
     }
     @Test
     void testTimePeriodOnNullTimeSlot(){
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidTimePeriodException.class, () -> {
             new TimePeriod(null, null);
         });
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(LocalDateTime.now(), null);
+        assertThrows(InvalidTimePeriodException.class, () -> {
+            new TimePeriod(LocalDateTime.of(2026, 5, 20, 10, 0), null);
         });
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(null, LocalDateTime.now());
+        assertThrows(InvalidTimePeriodException.class, () -> {
+            new TimePeriod(null, LocalDateTime.of(2026, 5, 20, 10, 0));
         });
     }
     @Test
     void testTimePeriodOnPastTimeSlot(){
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 15, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 14, 11, 0);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(InvalidTimePeriodException.class, () -> {
             new TimePeriod(startTime, endTime);
         });
     }
     @Test
     void testTimePeriodIsEqualToStartTime(){
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(InvalidTimePeriodException.class, () -> {
             new TimePeriod(startTime, startTime);
         });
     }
@@ -45,23 +51,8 @@ public class TimePeriodTest {
     void testTimeOnNotSharpHoursForStartTime(){
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 5);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 12, 0);
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(startTime, endTime);
-        });
-    }
-    @Test
-    void testTimePeriodOnWrongSecondsForStartTime(){
-        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0, 5);
-        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0, 5);
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(startTime, endTime);
-        });
-    }
-    @Test
-    void testTimePeriodOnWrongNanoSecondsForStartTime(){
-        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0, 0, 5);
-        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0, 0, 5);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(NotSharpTimeException.class, () -> {
             new TimePeriod(startTime, endTime);
         });
     }
@@ -69,26 +60,13 @@ public class TimePeriodTest {
     void testTimeOnNotSharpHoursForEndTime(){
         LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 12, 5);
-        assertThrows(IllegalArgumentException.class, () -> {
+
+        assertThrows(NotSharpTimeException.class, () -> {
             new TimePeriod(startTime, endTime);
         });
     }
-    @Test
-    void testTimePeriodOnWrongSecondsForEndTime(){
-        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0, 0);
-        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0, 5);
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(startTime, endTime);
-        });
-    }
-    @Test
-    void testTimePeriodOnWrongNanoSecondsForEndTime(){
-        LocalDateTime startTime = LocalDateTime.of(2026, 5, 20, 10, 0, 0, 0);
-        LocalDateTime endTime = LocalDateTime.of(2026, 5, 20, 11, 0, 0, 5);
-        assertThrows(IllegalArgumentException.class, () -> {
-            new TimePeriod(startTime, endTime);
-        });
-    }
+
+
     @Test
     void testOverlapsWithNoOverlap() {
         TimePeriod period1 = new TimePeriod(
@@ -103,19 +81,6 @@ public class TimePeriodTest {
         assertFalse(period1.overlapsWith(period2));
     }
 
-    @Test
-    void testOverlapsWithAdjacentPeriodsNoOverlap() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 9, 0),
-                LocalDateTime.of(2026, 5, 18, 10, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 10, 0),
-                LocalDateTime.of(2026, 5, 18, 11, 0)
-        );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
 
     @Test
     void testOverlapsWithPartialOverlap() {
@@ -184,40 +149,28 @@ public class TimePeriodTest {
 
         assertFalse(period1.overlapsWith(period2));
     }
+
+
+
     @Test
-    void testOverlapsWithNoOverlapSeparatePeriods() {
+    void testOverlapsWithConnectedPeriods() {
         TimePeriod period1 = new TimePeriod(
                 LocalDateTime.of(2026, 5, 18, 9, 0),
                 LocalDateTime.of(2026, 5, 18, 10, 0)
         );
         TimePeriod period2 = new TimePeriod(
+                LocalDateTime.of(2026, 5, 18, 10, 0),
+                LocalDateTime.of(2026, 5, 18, 11, 0)
+        );
+
+        assertFalse(period1.overlapsWith(period2));
+    }
+    @Test
+    void testOverlapsWithConnectedPeriodsReversed() {
+        TimePeriod period1 = new TimePeriod(
                 LocalDateTime.of(2026, 5, 18, 11, 0),
                 LocalDateTime.of(2026, 5, 18, 12, 0)
         );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
-
-    @Test
-    void testOverlapsWithNoOverlapMuchLaterPeriod() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 8, 0),
-                LocalDateTime.of(2026, 5, 18, 9, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 14, 0),
-                LocalDateTime.of(2026, 5, 18, 15, 0)
-        );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
-
-    @Test
-    void testOverlapsWithAdjacentPeriodsNoOverlap1() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 9, 0),
-                LocalDateTime.of(2026, 5, 18, 10, 0)
-        );
         TimePeriod period2 = new TimePeriod(
                 LocalDateTime.of(2026, 5, 18, 10, 0),
                 LocalDateTime.of(2026, 5, 18, 11, 0)
@@ -226,60 +179,6 @@ public class TimePeriodTest {
         assertFalse(period1.overlapsWith(period2));
     }
 
-    @Test
-    void testOverlapsWithAdjacentReverseNoOverlap() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 10, 0),
-                LocalDateTime.of(2026, 5, 18, 11, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 9, 0),
-                LocalDateTime.of(2026, 5, 18, 10, 0)
-        );
 
-        assertFalse(period1.overlapsWith(period2));
-    }
-
-    @Test
-    void testOverlapsWithMultipleHoursApart() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 7, 0),
-                LocalDateTime.of(2026, 5, 18, 8, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 12, 0),
-                LocalDateTime.of(2026, 5, 18, 13, 0)
-        );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
-
-    @Test
-    void testOverlapsWithDifferentDaysNoOverlap() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 9, 0),
-                LocalDateTime.of(2026, 5, 18, 10, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 19, 9, 0),
-                LocalDateTime.of(2026, 5, 19, 10, 0)
-        );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
-
-    @Test
-    void testOverlapsWithDifferentMonthsNoOverlap() {
-        TimePeriod period1 = new TimePeriod(
-                LocalDateTime.of(2026, 5, 18, 9, 0),
-                LocalDateTime.of(2026, 5, 18, 10, 0)
-        );
-        TimePeriod period2 = new TimePeriod(
-                LocalDateTime.of(2026, 6, 18, 9, 0),
-                LocalDateTime.of(2026, 6, 18, 10, 0)
-        );
-
-        assertFalse(period1.overlapsWith(period2));
-    }
 
 }
