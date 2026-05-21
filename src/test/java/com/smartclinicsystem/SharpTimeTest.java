@@ -37,4 +37,18 @@ public class SharpTimeTest {
             new SharpTime(time);
         });
     }
+    @Test
+    void testSharpTimeOfLegalTime(){
+        SharpTime sharpTime = SharpTime.of(22);
+        assertEquals(LocalTime.of(22, 0), sharpTime.time());
+    }
+    @Test
+    void testSharpTimeOfIllegalTime(){
+        assertThrows(IllegalArgumentException.class, () -> {
+            SharpTime.of(24);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            SharpTime.of(-1);
+        });
+    }
 }
