@@ -161,7 +161,7 @@ public class AppointmentCalendar {
         updateAppointmentsOnScheduleChange(newEffectiveSchedule);
     }
 
-    private Appointment findAppointmentOrThrow(AppointmentId appointmentId) {
+    public Appointment findAppointmentOrThrow(AppointmentId appointmentId) {
         return this.appointments.stream()
                 .filter(app -> app.getId().equals(appointmentId))
                 .findFirst()
