@@ -106,9 +106,37 @@ public class TestFixtures {
         return new EffectiveSchedule(LocalDate.of(year, month, day), schedule);
     }
 
+    public static class WeeklyScheduleBuilder {
+        private final Map<DayOfWeek, List<WorkingShift>> map = new EnumMap<>(DayOfWeek.class);
 
+        public WeeklyScheduleBuilder() {
+            for (DayOfWeek day : DayOfWeek.values()) {
+                map.put(day, new ArrayList<>());
+            }
+        }
 
+        public WeeklyScheduleBuilder withStandardWeekdays(int startHour, int endHour) {
+            WorkingShift shift = workingShift(startHour, endHour);
+            map.get(DayOfWeek.MONDAY).add(shift);
+            map.get(DayOfWeek.TUESDAY).add(shift);
+            map.get(DayOfWeek.WEDNESDAY).add(shift);
+            map.get(DayOfWeek.THURSDAY).add(shift);
+            map.get(DayOfWeek.FRIDAY).add(shift);
+            return this;
+        }
 
+        public WeeklyScheduleBuilder withShift(DayOfWeek day, int startHour, int endHour) {
+            map.get(day).add(workingShift(startHour, endHour));
+            return this;
+        }
 
+        public WeeklySchedule build() {
+            return new WeeklySchedule(map);
+        }
+    }
+
+    public static WeeklyScheduleBuilder scheduleBuilder() {
+        return new WeeklyScheduleBuilder();
+    }
 }
 
