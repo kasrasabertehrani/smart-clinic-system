@@ -8,6 +8,9 @@ import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.TimePeriod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static com.smartclinicsystem.TestFixtures.*;
 
@@ -152,4 +155,25 @@ public class AppointmentCalendarTest {
         assertEquals("This method is only for replacing appointments that the system previously cancelled.",
                 e.getMessage());
     }
+    @Test
+    void testAddUnavailabilityWithoutEffectingExistingAppointments() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 15, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 6, 19, 10, 0);
+        TimePeriod leaveTimePeriod = new TimePeriod(start, end);
+        calendar.addUnavailability(leaveTimePeriod);
+
+        assertEquals(2, calendar.getUnavailabilities().size());
+    }
+    @Test
+    void testAddUnavailabilityWithEffectingExistingAppointments() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 6, 5, 10, 0);
+        TimePeriod leaveTimePeriod = new TimePeriod(start, end);
+        calendar.addUnavailability(leaveTimePeriod);
+
+        for (Appointment appointment : calendar.getAppointments()) {
+            assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
+        }
+    }
+
 }
