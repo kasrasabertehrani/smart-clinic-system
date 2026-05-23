@@ -1,6 +1,5 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.vo;
 
-import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.DoctorId;
 import org.junit.jupiter.api.Test;
 
