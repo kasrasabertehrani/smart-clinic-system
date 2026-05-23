@@ -133,6 +133,11 @@ public class TestFixtures {
         public WeeklySchedule build() {
             return new WeeklySchedule(map);
         }
+        public WeeklyScheduleBuilder overrideDay(DayOfWeek day, int startHour, int endHour) {
+            map.get(day).clear();
+            map.get(day).add(workingShift(startHour, endHour));
+            return this;
+        }
     }
 
     public static WeeklyScheduleBuilder scheduleBuilder() {

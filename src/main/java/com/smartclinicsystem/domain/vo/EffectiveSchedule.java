@@ -16,6 +16,6 @@ public record EffectiveSchedule(LocalDate validFrom, WeeklySchedule schedule) {
     }
 
     public boolean appliesTo(LocalDate date) {
-        return date.isAfter(validFrom);
+        return !date.isBefore(validFrom);
     }
 }

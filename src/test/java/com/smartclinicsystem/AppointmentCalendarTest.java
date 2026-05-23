@@ -3,12 +3,17 @@ package com.smartclinicsystem;
 import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.AppointmentCalendar;
 import com.smartclinicsystem.domain.exception.BookingException;
+import com.smartclinicsystem.domain.exception.InvalidEffectiveScheduleException;
+import com.smartclinicsystem.domain.exception.AppointmentNotFoundException;
 import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.TimePeriod;
+import com.smartclinicsystem.domain.vo.WeeklySchedule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -174,6 +179,52 @@ public class AppointmentCalendarTest {
         for (Appointment appointment : calendar.getAppointments()) {
             assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
         }
+    }
+    @Test
+    void testChangeScheduleWithoutEffectingExistingAppointments() {
+        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(9, 17)
+                .withShift(DayOfWeek.WEDNESDAY, 9, 12)
+                .build();
+        LocalDate validFrom = LocalDate.of(2026, 7, 1);
+
+        calendar.changeSchedule(newWeeklySchedule, validFrom);
+        assertEquals(2, calendar.getEffectiveSchedules().size());
+    }
+    @Test
+    void testChangeScheduleWithTheSameValidFrom() {
+        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(9, 17)
+                .withShift(DayOfWeek.WEDNESDAY, 9, 12)
+                .build();
+        LocalDate validFrom = LocalDate.of(2026, 6, 1);
+
+        var e = assertThrows(InvalidEffectiveScheduleException.class, () -> calendar.changeSchedule(
+                newWeeklySchedule, validFrom));
+        assertEquals("A schedule already exists starting on " + validFrom +
+                ". You must edit the existing schedule or choose a different start date.", e.getMessage());
+    }
+    @Test
+    void testChangeScheduleWithEffectingExistingAppointments() {
+        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(9, 17)
+                .overrideDay(DayOfWeek.TUESDAY, 7, 10)
+                .overrideDay(DayOfWeek.THURSDAY, 9, 12)
+                .build();
+        LocalDate validFrom = LocalDate.of(2026, 6, 2);
+        calendar.changeSchedule(newWeeklySchedule, validFrom);
+
+        for (Appointment appointment : calendar.getAppointments()) {
+            assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
+        }
+
+    }
+    @Test
+    void testFindAppointmentOrThrowWithInvalidId() {
+        AppointmentId invalidId = new AppointmentId("invalid-id");
+        var e = assertThrows(AppointmentNotFoundException.class, () -> calendar.findAppointmentOrThrow(invalidId));
+        assertEquals("Appointment with ID " + invalidId.value() + " was not found in this calendar.",
+                e.getMessage());
     }
 
 }
