@@ -11,7 +11,7 @@ public record WorkingShift(SharpTime startTime, SharpTime endTime) {
         if (startTime == null || endTime == null) {
             throw new InvalidTimePeriodException("Start and end times are required.");
         }
-        if (!endTime.time().isAfter(startTime.time())) {
+        if (!endTime.isAfter(startTime)) {
             throw new InvalidTimePeriodException("End time must be after start time.");
         }
     }
@@ -20,5 +20,10 @@ public record WorkingShift(SharpTime startTime, SharpTime endTime) {
 
         return !requestedStartTime.isBefore(this.startTime.time()) &&
                 !requestedEndTime.isAfter(this.endTime.time());
+    }
+
+    public boolean overlapsWith(WorkingShift other) {
+        return this.startTime.isBefore(other.endTime()) &&
+                other.startTime().isBefore(this.endTime);
     }
 }

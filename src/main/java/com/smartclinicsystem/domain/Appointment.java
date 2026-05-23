@@ -34,6 +34,9 @@ public class Appointment {
         if (durationInMinutes != 60) {
             throw new AppointmentException("Appointment duration must be exactly 60 minutes.");
         }
+        if(!timePeriod.startTime().toLocalDate().equals(timePeriod.endTime().toLocalDate())) {
+            throw new AppointmentException("Appointment must start and end on the same day.");
+        }
 
         this.id = new AppointmentId(UUID.randomUUID().toString());
         this.patientId = patientId;

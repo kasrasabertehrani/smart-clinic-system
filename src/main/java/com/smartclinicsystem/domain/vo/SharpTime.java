@@ -22,4 +22,11 @@ public record SharpTime(LocalTime time) {
         }
         return new SharpTime(LocalTime.of(hour, 0));
     }
+    public boolean isBefore(SharpTime other) {
+        return this.time.isBefore(other.time());
+    }
+
+    public boolean isAfter(SharpTime other) {
+        return this.time.isAfter(other.time());
+    }
 }
