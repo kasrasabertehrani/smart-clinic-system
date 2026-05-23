@@ -1,4 +1,4 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidWeeklyScheduleException;
 import com.smartclinicsystem.domain.vo.TimePeriod;

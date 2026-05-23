@@ -1,4 +1,4 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.vo;
 
 
 import com.smartclinicsystem.domain.exception.NotSharpTimeException;

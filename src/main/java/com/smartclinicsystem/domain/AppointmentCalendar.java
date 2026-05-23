@@ -2,30 +2,39 @@ package com.smartclinicsystem.domain;
 
 import com.smartclinicsystem.domain.exception.*;
 import com.smartclinicsystem.domain.vo.*;
+import lombok.Getter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@Getter
 public class AppointmentCalendar {
     private final List<EffectiveSchedule> effectiveSchedules;
     private final List<Appointment> appointments;
     private final List<Unavailability> unavailabilities;
+    private final DoctorId doctorId;
 
-    public AppointmentCalendar(DoctorId doctorId, List<EffectiveSchedule> effectiveSchedules) {
-        this.effectiveSchedules = effectiveSchedules;
-        this.appointments = new ArrayList<>();
-        this.unavailabilities = new ArrayList<>();
+    public AppointmentCalendar(
+            DoctorId doctorId,
+            List<EffectiveSchedule> effectiveSchedules,
+            List<Unavailability> unavailabilities,
+            List<Appointment> appointments) {
+
+        this.doctorId = doctorId;
+        this.effectiveSchedules = new ArrayList<>(effectiveSchedules);
+        this.unavailabilities = new ArrayList<>(unavailabilities);
+        this.appointments = new ArrayList<>(appointments);
     }
 
-    private void addAppointment(PatientId patientId, TimePeriod appointmentTime) {
+    public void addAppointment(PatientId patientId, TimePeriod appointmentTime) {
             validateBookingRules(appointmentTime);
             Appointment proposedAppointment = new Appointment(patientId, appointmentTime);
             appointments.add(proposedAppointment);
     }
 
-    private void cancelAppointment(AppointmentId appointmentId, Appointment.CancellationInitiator initiator) {
+    public void cancelAppointment(AppointmentId appointmentId, Appointment.CancellationInitiator initiator) {
         Appointment appointmentToCancel = findAppointmentOrThrow(appointmentId);
         appointmentToCancel.cancel(initiator);
     }
@@ -45,21 +54,49 @@ public class AppointmentCalendar {
         appointment.markAsNoShow();
     }
 
-    public void rescheduleAppointment(AppointmentId oldAppointmentId, TimePeriod newTimePeriod,
-                                      Appointment.CancellationInitiator initiator) {
+    public void rescheduleActiveAppointment(
+            AppointmentId oldAppointmentId,
+            TimePeriod newTimePeriod,
+            Appointment.CancellationInitiator initiator) {
+
         Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
 
-        if (!oldAppointment.isScheduled() && !oldAppointment.hasCheckedIn() && !oldAppointment.canceledBySystem()) {
-            throw new BookingException(
-                    "Appointment can only be rescheduled if it is SCHEDULED, CHECKED_IN, or CANCELLED_BY_SYSTEM.");
+        if (!oldAppointment.isScheduled() && !oldAppointment.hasCheckedIn()) {
+            throw new BookingException("Only active appointments can be actively rescheduled.");
         }
+
+        validateBookingRules(newTimePeriod);
+        oldAppointment.cancel(initiator);
+
+
+        Appointment rescheduledAppointment = new Appointment(
+                oldAppointment.getPatientId(),
+                newTimePeriod,
+                oldAppointmentId
+        );
+        appointments.add(rescheduledAppointment);
+    }
+
+    public void rescheduleSystemCancelledAppointment(
+            AppointmentId oldAppointmentId,
+            TimePeriod newTimePeriod) {
+
+        Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
+
+
+        if (!oldAppointment.canceledBySystem()) {
+            throw new BookingException(
+                    "This method is only for replacing appointments that the system previously cancelled.");
+        }
+
         validateBookingRules(newTimePeriod);
 
-        if (oldAppointment.isScheduled() || oldAppointment.hasCheckedIn()) {
-            oldAppointment.cancel(initiator);
-        }
-        Appointment rescheduledAppointment = new Appointment(oldAppointment.getPatientId(), newTimePeriod,
-                oldAppointmentId);
+
+        Appointment rescheduledAppointment = new Appointment(
+                oldAppointment.getPatientId(),
+                newTimePeriod,
+                oldAppointmentId
+        );
         appointments.add(rescheduledAppointment);
     }
 
@@ -123,7 +160,7 @@ public class AppointmentCalendar {
         ));
     }
 
-    private void validateBookingRules(TimePeriod requestedTime) {
+    public void validateBookingRules(TimePeriod requestedTime) {
         if (!isDoctorWorking(requestedTime)) {
             throw new BookingException("Cannot book: The requested time falls outside working hours.");
         }
