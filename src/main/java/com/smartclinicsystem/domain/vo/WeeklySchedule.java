@@ -3,9 +3,7 @@ package com.smartclinicsystem.domain.vo;
 import com.smartclinicsystem.domain.exception.InvalidWeeklyScheduleException;
 
 import java.time.DayOfWeek;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
 
 public record WeeklySchedule(Map<DayOfWeek, List<WorkingShift>> schedule) {
 
@@ -20,12 +18,30 @@ public record WeeklySchedule(Map<DayOfWeek, List<WorkingShift>> schedule) {
                 );
             }
 
-            if (schedule.get(day) == null) {
+            List<WorkingShift> shiftsForDay = schedule.get(day);
+            if (shiftsForDay == null) {
                 throw new InvalidWeeklyScheduleException(
                         "The shift list for " + day + " cannot be null. Use an empty list instead."
                 );
             }
+            if (shiftsForDay.size() > 1) {
+                List<WorkingShift> sortedShifts = new ArrayList<>(shiftsForDay);
+                sortedShifts.sort(Comparator.comparing(shift -> shift.startTime().time()));
+
+                for (int i = 0; i < sortedShifts.size() - 1; i++) {
+                    WorkingShift currentShift = sortedShifts.get(i);
+                    WorkingShift nextShift = sortedShifts.get(i + 1);
+
+                    if (currentShift.overlapsWith(nextShift)) {
+                        throw new InvalidWeeklyScheduleException(
+                                "Overlapping shifts detected on " + day +
+                                        ": " + currentShift + " overlaps with " + nextShift
+                        );
+                    }
+                }
+            }
         }
+
         schedule = Collections.unmodifiableMap(schedule);
     }
 
