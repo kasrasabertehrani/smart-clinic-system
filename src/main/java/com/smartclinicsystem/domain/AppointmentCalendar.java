@@ -146,6 +146,16 @@ public class AppointmentCalendar {
     }
 
     public void changeSchedule(WeeklySchedule newSchedule, LocalDate effectiveDate) {
+        boolean dateAlreadyExists = this.effectiveSchedules.stream()
+                .anyMatch(existing -> existing.validFrom().equals(effectiveDate));
+
+        if (dateAlreadyExists) {
+            throw new InvalidEffectiveScheduleException(
+                    "A schedule already exists starting on " + effectiveDate +
+                            ". You must edit the existing schedule or choose a different start date."
+            );
+        }
+
         EffectiveSchedule newEffectiveSchedule = new EffectiveSchedule(effectiveDate, newSchedule);
         this.effectiveSchedules.add(newEffectiveSchedule);
         updateAppointmentsOnScheduleChange(newEffectiveSchedule);
