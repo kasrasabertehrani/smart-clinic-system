@@ -1,13 +1,11 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidEffectiveScheduleException;
-import com.smartclinicsystem.domain.vo.EffectiveSchedule;
-import com.smartclinicsystem.domain.vo.WeeklySchedule;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
-import static com.smartclinicsystem.TestFixtures.standardWeeklySchedule;
+import static com.smartclinicsystem.domain.TestFixtures.standardWeeklySchedule;
 import static org.junit.jupiter.api.Assertions.*;
 
 

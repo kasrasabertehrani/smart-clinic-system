@@ -1,14 +1,13 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
-import com.smartclinicsystem.domain.vo.WorkingShift;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalTime;
 
-import static com.smartclinicsystem.TestFixtures.*;
+import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class WorkingShiftTest {
@@ -89,5 +88,76 @@ public class WorkingShiftTest {
 
         assertFalse(shift.covers(LocalTime.of(8, 0), LocalTime.of(17, 0)));
     }
+    @Test
+    void testWorkingShiftOverLaps(){
+        WorkingShift shift = workingShift(9, 15);
+        WorkingShift shift2 = workingShift(10, 16);
+
+        assertTrue(shift.overlapsWith(shift2));
+    }
+    @Test
+    void testWorkingShiftDoesNotOverlap(){
+        WorkingShift shift = workingShift(9, 15);
+        WorkingShift shift2 = workingShift(16, 17);
+
+        assertFalse(shift.overlapsWith(shift2));
+    }
+    @Test
+    void testWorkingShiftOverlapsEqually(){
+        WorkingShift shift = workingShift(9, 15);
+        WorkingShift shift2 = workingShift(9, 15);
+
+        assertTrue(shift.overlapsWith(shift2));
+    }
+    @Test
+    void testWorkingShiftDoesNotOverlapOnTwoConsequentWorkingShifts(){
+        WorkingShift shift = workingShift(9, 15);
+        WorkingShift shift2 = workingShift(15, 17);
+
+        assertFalse(shift.overlapsWith(shift2));
+    }
+    @Test
+    void testWorkingShiftOneContainsOther() {
+        WorkingShift large = workingShift(9, 17);
+        WorkingShift small = workingShift(10, 15);
+
+        assertTrue(large.overlapsWith(small));
+        assertTrue(small.overlapsWith(large)); // Test symmetry
+    }
+
+    @Test
+    void testWorkingShiftPartialOverlapAtStart() {
+        WorkingShift shift1 = workingShift(9, 12);
+        WorkingShift shift2 = workingShift(11, 15);
+
+        assertTrue(shift1.overlapsWith(shift2));
+        assertTrue(shift2.overlapsWith(shift1)); // Test symmetry
+    }
+
+    @Test
+    void testWorkingShiftPartialOverlapAtEnd() {
+        WorkingShift shift1 = workingShift(14, 17);
+        WorkingShift shift2 = workingShift(12, 15);
+
+        assertTrue(shift1.overlapsWith(shift2));
+        assertTrue(shift2.overlapsWith(shift1)); // Test symmetry
+    }
+
+    @Test
+    void testWorkingShiftTouchAtStartBoundary() {
+        WorkingShift shift1 = workingShift(9, 12);
+        WorkingShift shift2 = workingShift(12, 15);
+
+        assertFalse(shift1.overlapsWith(shift2));
+    }
+
+    @Test
+    void testWorkingShiftTouchAtEndBoundary() {
+        WorkingShift shift1 = workingShift(12, 15);
+        WorkingShift shift2 = workingShift(9, 12);
+
+        assertFalse(shift1.overlapsWith(shift2));
+    }
+
 
 }

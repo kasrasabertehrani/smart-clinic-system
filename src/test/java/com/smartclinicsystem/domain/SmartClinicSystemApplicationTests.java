@@ -1,4 +1,4 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.domain;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

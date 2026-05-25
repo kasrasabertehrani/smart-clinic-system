@@ -1,7 +1,6 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 
-import com.smartclinicsystem.domain.vo.PatientId;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

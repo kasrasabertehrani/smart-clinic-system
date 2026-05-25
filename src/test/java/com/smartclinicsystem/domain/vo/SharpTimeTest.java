@@ -1,8 +1,7 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 
 import com.smartclinicsystem.domain.exception.NotSharpTimeException;
-import com.smartclinicsystem.domain.vo.SharpTime;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
@@ -51,4 +50,5 @@ public class SharpTimeTest {
             SharpTime.of(-1);
         });
     }
+
 }
