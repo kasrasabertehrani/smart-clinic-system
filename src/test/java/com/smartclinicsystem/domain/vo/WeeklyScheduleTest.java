@@ -1,19 +1,18 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
+import com.smartclinicsystem.domain.TestFixtures;
 import com.smartclinicsystem.domain.exception.InvalidWeeklyScheduleException;
-import com.smartclinicsystem.domain.vo.TimePeriod;
-import com.smartclinicsystem.domain.vo.WeeklySchedule;
-import com.smartclinicsystem.domain.vo.WorkingShift;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.smartclinicsystem.TestFixtures.*;
+import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class WeeklyScheduleTest {
@@ -160,5 +159,16 @@ public class WeeklyScheduleTest {
         TimePeriod period = new TimePeriod(start, end);
 
         assertFalse(schedule.isWorkingDuring(period));
+    }
+    @Test
+    void testWhenWorkingHoursOverlap() {
+        assertThrows(InvalidWeeklyScheduleException.class, () -> {
+
+            TestFixtures.scheduleBuilder()
+                    .withStandardWeekdays(9, 17)
+                    .withShift(DayOfWeek.WEDNESDAY, 9, 12)
+                    .build();
+
+        });
     }
 }

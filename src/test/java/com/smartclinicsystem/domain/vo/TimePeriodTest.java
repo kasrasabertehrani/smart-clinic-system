@@ -1,14 +1,13 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
 import com.smartclinicsystem.domain.exception.NotSharpTimeException;
-import com.smartclinicsystem.domain.vo.TimePeriod;
 import org.junit.jupiter.api.Test;
 
 
 import java.time.LocalDateTime;
 
-import static com.smartclinicsystem.TestFixtures.*;
+import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TimePeriodTest {

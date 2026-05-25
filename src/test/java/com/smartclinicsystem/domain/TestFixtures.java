@@ -1,12 +1,10 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.domain;
 
-import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.vo.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 
 /**

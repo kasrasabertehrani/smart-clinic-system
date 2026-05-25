@@ -1,7 +1,5 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.domain;
 
-import com.smartclinicsystem.domain.Appointment;
-import com.smartclinicsystem.domain.AppointmentCalendar;
 import com.smartclinicsystem.domain.exception.BookingException;
 import com.smartclinicsystem.domain.exception.InvalidEffectiveScheduleException;
 import com.smartclinicsystem.domain.exception.AppointmentNotFoundException;
@@ -17,7 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static com.smartclinicsystem.TestFixtures.*;
+import static com.smartclinicsystem.domain.TestFixtures.*;
 
 public class AppointmentCalendarTest {
 

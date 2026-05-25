@@ -1,13 +1,11 @@
-package com.smartclinicsystem.vo;
+package com.smartclinicsystem.domain.vo;
 
 import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
-import com.smartclinicsystem.domain.vo.TimePeriod;
-import com.smartclinicsystem.domain.vo.Unavailability;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
-import static com.smartclinicsystem.TestFixtures.timePeriod;
+import static com.smartclinicsystem.domain.TestFixtures.timePeriod;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UnavailabilityTest {

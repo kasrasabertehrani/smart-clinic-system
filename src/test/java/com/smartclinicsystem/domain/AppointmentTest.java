@@ -1,10 +1,12 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.domain;
 
-import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.exception.AppointmentException;
+import com.smartclinicsystem.domain.vo.TimePeriod;
 import org.junit.jupiter.api.Test;
 
-import static com.smartclinicsystem.TestFixtures.*;
+import java.time.LocalDateTime;
+
+import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class AppointmentTest {
@@ -121,7 +123,7 @@ public class AppointmentTest {
     void testAppointmentIsRescheduled() {
         Appointment appointment = appointment(
             patientId("patient-123"),
-            timePeriod(2026, 5, 21, 10),
+            timePeriod(2026, 5, 30, 10),
             appointmentId("appointment-123")
         );
         assertEquals(appointmentId("appointment-123"), appointment.getRescheduledFromId());

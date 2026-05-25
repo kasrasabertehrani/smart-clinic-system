@@ -1,7 +1,5 @@
-package com.smartclinicsystem;
+package com.smartclinicsystem.domain;
 
-import com.smartclinicsystem.domain.Appointment;
-import com.smartclinicsystem.domain.AppointmentCalendar;
 import com.smartclinicsystem.domain.vo.*;
 
 
@@ -11,7 +9,7 @@ import java.util.List;
 
 
 
-import static com.smartclinicsystem.TestFixtures.*;
+import static com.smartclinicsystem.domain.TestFixtures.*;
 
 /**
  * High-level factory class specifically for AppointmentCalendar scenarios.
