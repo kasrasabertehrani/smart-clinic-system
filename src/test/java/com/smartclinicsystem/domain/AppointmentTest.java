@@ -1,10 +1,9 @@
 package com.smartclinicsystem.domain;
 
 import com.smartclinicsystem.domain.exception.AppointmentException;
-import com.smartclinicsystem.domain.vo.TimePeriod;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+
 
 import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,22 +11,24 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AppointmentTest {
     @Test
     void testAppointmentStatusOnCreation() {
-        Appointment appointment = appointment(patientId("patient-123"), 15);
+        Appointment appointment = appointment(patientId("patient-123"), timeSlot(6, 5, 20, 0));
         assertEquals(Appointment.status.SCHEDULED, appointment.getAppointmentStatus());
     }
 
     @Test
     void testAppointmentInPast() {
-        assertThrows(AppointmentException.class, () ->
-            appointment(patientId("patient-123"), timePeriod(2026, 5, 19, 15, 16))
+       var e = assertThrows(AppointmentException.class, () ->
+            appointment(patientId("patient-123"), timeSlot(4,20, 15, 15))
         );
+       assertEquals("Cannot schedule an appointment in the past.", e.getMessage());
     }
 
     @Test
     void testAppointmentMoreThanOneHour() {
-        assertThrows(AppointmentException.class, () ->
-            appointment(patientId("patient-123"), timePeriod(2026, 5, 21, 10, 12))
+      var e =  assertThrows(AppointmentException.class, () ->
+            appointment(patientId("patient-123"), timeSlot(6, 20, 15, 0, 90))
         );
+      assertEquals("Only 1-hour appointments are supported.", e.getMessage());
     }
 
     @Test
@@ -87,7 +88,6 @@ public class AppointmentTest {
     @Test
     void testMarkOutAsNoShow() {
         Appointment appointment = appointment(patientId("patient-123"), 10);
-        appointment.checkIn();
         appointment.markAsNoShow();
         assertEquals(Appointment.status.NO_SHOW, appointment.getAppointmentStatus());
     }
@@ -123,7 +123,7 @@ public class AppointmentTest {
     void testAppointmentIsRescheduled() {
         Appointment appointment = appointment(
             patientId("patient-123"),
-            timePeriod(2026, 5, 30, 10),
+            timeSlot(6, 5, 20, 15),
             appointmentId("appointment-123")
         );
         assertEquals(appointmentId("appointment-123"), appointment.getRescheduledFromId());

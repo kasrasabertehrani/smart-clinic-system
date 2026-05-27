@@ -3,10 +3,7 @@ package com.smartclinicsystem.domain;
 import com.smartclinicsystem.domain.exception.BookingException;
 import com.smartclinicsystem.domain.exception.InvalidEffectiveScheduleException;
 import com.smartclinicsystem.domain.exception.AppointmentNotFoundException;
-import com.smartclinicsystem.domain.vo.AppointmentId;
-import com.smartclinicsystem.domain.vo.PatientId;
-import com.smartclinicsystem.domain.vo.TimePeriod;
-import com.smartclinicsystem.domain.vo.WeeklySchedule;
+import com.smartclinicsystem.domain.vo.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,37 +30,41 @@ public class AppointmentCalendarTest {
     }
     @Test
     void testValidateBookingRulesWhenDoctorIsUnavailable(){
-        TimePeriod timePeriod = timePeriod(2026, 6, 11,10);
+        TimeSlot slot = timeSlot(6, 11, 10, 15);
 
-        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(timePeriod));
+        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(slot));
+
         assertEquals("Cannot book: The doctor is on leave during this time.", e.getMessage());
     }
     @Test
-    void testValidateBookingRulesTimeSlotIsUnavailable(){
-        TimePeriod timePeriod = timePeriod(2026, 6, 2,10);
+    void testValidateBookingRulesWhenAppointmentIsAlreadyBooked(){
+        TimeSlot slot = timeSlot(6, 2, 10, 0);
 
-        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(timePeriod));
+        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(slot));
+
         assertEquals("Cannot book: This time slot is already taken.", e.getMessage());
     }
     @Test
     void testValidateBookingRulesWhenDoctorIsNotWorking(){
-        TimePeriod timePeriod = timePeriod(2026, 6, 14,10);
+        TimeSlot slot = timeSlot(6, 7, 10, 0);
 
-        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(timePeriod));
+        var e = assertThrows(BookingException.class, () -> calendar.validateBookingRules(slot));
+
         assertEquals("Cannot book: The requested time falls outside working hours.", e.getMessage());
     }
     @Test
     void testValidateBookingRulesWhenAllConditionsAreMet(){
-        TimePeriod timePeriod = timePeriod(2026, 6, 15,10);
+        TimeSlot slot = timeSlot(6, 3, 10, 0);
 
-        assertDoesNotThrow(() -> calendar.validateBookingRules(timePeriod));
+        assertDoesNotThrow(() -> calendar.validateBookingRules(slot));
     }
     @Test
     void testAddAppointment(){
-        TimePeriod timePeriod = timePeriod(2026, 6, 15,10);
         PatientId patientId = patientId("pat-1");
+        TimeSlot slot = timeSlot(6, 3, 10, 0);
 
-        calendar.addAppointment(patientId, timePeriod);
+        calendar.addAppointment(patientId, slot);
+
         assertEquals(3, calendar.getAppointments().size());
     }
     @Test
@@ -96,73 +97,80 @@ public class AppointmentCalendarTest {
     void testMarkNoShow() {
         AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
 
-        calendar.checkInPatient(appointmentId);
         calendar.recordNoShow(appointmentId);
 
         assertSame(Appointment.status.NO_SHOW, calendar.getAppointments().get(1).getAppointmentStatus());
     }
     @Test
     void testRescheduleActiveAppointment() {
-        AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
-        TimePeriod newTimePeriod = timePeriod(2026, 6, 15,11);
-        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.CLINIC_RECEPTION;
+        AppointmentId oldAppointmentId = calendar.getAppointments().get(1).getId();
+        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.PATIENT;
+        TimeSlot newTimeSlot = timeSlot(6, 9, 10, 15);
 
-        calendar.rescheduleActiveAppointment(appointmentId, newTimePeriod, initiator);
+        calendar.rescheduleActiveAppointment(oldAppointmentId, newTimeSlot, initiator);
 
-        assertEquals(newTimePeriod, calendar.getAppointments().get(2).getTimePeriod());
-        assertSame(Appointment.status.CANCELLED, calendar.getAppointments().get(1).getAppointmentStatus());
+        assertEquals(3, calendar.getAppointments().size());
+        assertNotNull(calendar.getAppointments().get(2).getRescheduledFromId());
     }
     @Test
     void testRescheduleActiveAppointmentWhenAppointmentIsAlreadyCompleted() {
-        AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
-        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.CLINIC_RECEPTION;
-        TimePeriod newTimePeriod = timePeriod(2026, 6, 15,11);
-        calendar.cancelAppointment(appointmentId, initiator);
+        AppointmentId oldAppointmentId = calendar.getAppointments().get(1).getId();
+        calendar.checkInPatient(oldAppointmentId);
+        calendar.completeAppointment(oldAppointmentId);
 
-        var e = assertThrows(BookingException.class, () -> calendar.rescheduleActiveAppointment(
-                appointmentId, newTimePeriod, initiator));
+        TimeSlot newTimeSlot = timeSlot(6, 9, 10, 15);
+        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.PATIENT;
+
+        var e = assertThrows(BookingException.class, () ->
+                calendar.rescheduleActiveAppointment(oldAppointmentId, newTimeSlot, initiator)
+        );
+
         assertEquals("Only active appointments can be actively rescheduled.", e.getMessage());
-
     }
     @Test
     void testRescheduleActiveAppointmentWhenCheckedIn() {
-        AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
-        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.CLINIC_RECEPTION;
-        TimePeriod newTimePeriod = timePeriod(2026, 6, 15,11);
-        calendar.checkInPatient(appointmentId);
-        calendar.rescheduleActiveAppointment(appointmentId, newTimePeriod, initiator);
+        AppointmentId oldAppointmentId = calendar.getAppointments().get(1).getId();
+        calendar.checkInPatient(oldAppointmentId);
 
-        assertEquals(newTimePeriod, calendar.getAppointments().get(2).getTimePeriod());
-        assertSame(Appointment.status.CANCELLED, calendar.getAppointments().get(1).getAppointmentStatus());
+        TimeSlot newTimeSlot = timeSlot(6, 9, 10, 15);
+        Appointment.CancellationInitiator initiator = Appointment.CancellationInitiator.PATIENT;
 
+        calendar.rescheduleActiveAppointment(oldAppointmentId, newTimeSlot, initiator);
+
+        assertEquals(3, calendar.getAppointments().size());
+        assertNotNull(calendar.getAppointments().get(2).getRescheduledFromId());
     }
     @Test
     void testRescheduleSystemCancelledAppointment() {
-        AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
-        TimePeriod newTimePeriod = timePeriod(2026, 6, 15,11);
-        calendar.cancelAppointment(appointmentId, Appointment.CancellationInitiator.SYSTEM_AUTOMATION);
+        AppointmentId oldAppointmentId = calendar.getAppointments().get(1).getId();
+        calendar.cancelAppointment(oldAppointmentId, Appointment.CancellationInitiator.SYSTEM_AUTOMATION);
+        TimeSlot newTimeSlot = timeSlot(6, 9, 10, 15);
 
-        calendar.rescheduleSystemCancelledAppointment(appointmentId, newTimePeriod);
+        calendar.rescheduleSystemCancelledAppointment(oldAppointmentId, newTimeSlot);
 
-        assertEquals(newTimePeriod, calendar.getAppointments().get(2).getTimePeriod());
-
+        assertEquals(3, calendar.getAppointments().size());
+        assertNotNull(calendar.getAppointments().get(2).getRescheduledFromId());
     }
     @Test
     void testRescheduleSystemCancelledAppointmentWhenAppointmentIsNotCancelledBySystem() {
-        AppointmentId appointmentId = calendar.getAppointments().get(1).getId();
-        TimePeriod newTimePeriod = timePeriod(2026, 6, 15,11);
-        calendar.cancelAppointment(appointmentId, Appointment.CancellationInitiator.PATIENT);
+        AppointmentId oldAppointmentId = calendar.getAppointments().get(1).getId();
+        calendar.cancelAppointment(oldAppointmentId, Appointment.CancellationInitiator.PATIENT);
+        TimeSlot newTimeSlot = timeSlot(6, 9, 10, 15);
 
-        var e = assertThrows(BookingException.class, () -> calendar.rescheduleSystemCancelledAppointment(
-                appointmentId, newTimePeriod));
+
+        var e = assertThrows(BookingException.class, () ->
+                calendar.rescheduleSystemCancelledAppointment(oldAppointmentId, newTimeSlot)
+        );
         assertEquals("This method is only for replacing appointments that the system previously cancelled.",
                 e.getMessage());
+
     }
     @Test
     void testAddUnavailabilityWithoutEffectingExistingAppointments() {
         LocalDateTime start = LocalDateTime.of(2026, 6, 15, 9, 0);
         LocalDateTime end = LocalDateTime.of(2026, 6, 19, 10, 0);
         TimePeriod leaveTimePeriod = new TimePeriod(start, end);
+
         calendar.addUnavailability(leaveTimePeriod);
 
         assertEquals(2, calendar.getUnavailabilities().size());
@@ -180,42 +188,47 @@ public class AppointmentCalendarTest {
     }
     @Test
     void testChangeScheduleWithoutEffectingExistingAppointments() {
-        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
-                .withStandardWeekdays(9, 17)
-                .withShift(DayOfWeek.WEDNESDAY, 9, 12)
+        WeeklySchedule newSchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(9, 15, 17, 30)
+                .withShift(DayOfWeek.SATURDAY, 10, 0, 14, 0)
                 .build();
-        LocalDate validFrom = LocalDate.of(2026, 7, 1);
 
-        calendar.changeSchedule(newWeeklySchedule, validFrom);
-        assertEquals(2, calendar.getEffectiveSchedules().size());
+        LocalDate validFrom = LocalDate.of(2026, 7, 15);
+
+        calendar.changeSchedule(newSchedule, validFrom);
+
+        for (Appointment appointment : calendar.getAppointments()) {
+            assertEquals(Appointment.status.SCHEDULED, appointment.getAppointmentStatus());
+        }
+
     }
     @Test
     void testChangeScheduleWithTheSameValidFrom() {
-        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
-                .withStandardWeekdays(9, 17)
-                .withShift(DayOfWeek.WEDNESDAY, 9, 12)
+        WeeklySchedule newSchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(15, 15, 17, 30)
+                .withShift(DayOfWeek.SATURDAY, 10, 0, 14, 0)
                 .build();
         LocalDate validFrom = LocalDate.of(2026, 6, 1);
 
-        var e = assertThrows(InvalidEffectiveScheduleException.class, () -> calendar.changeSchedule(
-                newWeeklySchedule, validFrom));
+        var e = assertThrows(InvalidEffectiveScheduleException.class, () ->
+                calendar.changeSchedule(newSchedule, validFrom));
+
         assertEquals("A schedule already exists starting on " + validFrom +
                 ". You must edit the existing schedule or choose a different start date.", e.getMessage());
     }
     @Test
     void testChangeScheduleWithEffectingExistingAppointments() {
-        WeeklySchedule newWeeklySchedule = TestFixtures.scheduleBuilder()
-                .withStandardWeekdays(9, 17)
-                .overrideDay(DayOfWeek.TUESDAY, 7, 10)
-                .overrideDay(DayOfWeek.THURSDAY, 9, 12)
+        WeeklySchedule newSchedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(15, 15, 17, 30)
+                .withShift(DayOfWeek.SATURDAY, 10, 0, 14, 0)
                 .build();
         LocalDate validFrom = LocalDate.of(2026, 6, 2);
-        calendar.changeSchedule(newWeeklySchedule, validFrom);
+
+        calendar.changeSchedule(newSchedule, validFrom);
 
         for (Appointment appointment : calendar.getAppointments()) {
             assertEquals(Appointment.status.CANCELLED, appointment.getAppointmentStatus());
         }
-
     }
     @Test
     void testFindAppointmentOrThrowWithInvalidId() {

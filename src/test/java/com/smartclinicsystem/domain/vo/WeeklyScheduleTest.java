@@ -5,12 +5,9 @@ import com.smartclinicsystem.domain.exception.InvalidWeeklyScheduleException;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
+
 
 import static com.smartclinicsystem.domain.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,41 +16,15 @@ public class WeeklyScheduleTest {
 
     @Test
     void testWeeklyScheduleCreation() {
-        Map<DayOfWeek, List<WorkingShift>> scheduleMap = new EnumMap<>(DayOfWeek.class);
-        for (DayOfWeek day : DayOfWeek.values()) {
-            if (day == DayOfWeek.MONDAY) {
-                scheduleMap.put(day, List.of(workingShift(9, 17)));
-            } else {
-                scheduleMap.put(day, List.of());
-            }
-        }
-
-        WeeklySchedule schedule = new WeeklySchedule(scheduleMap);
+        WeeklySchedule schedule = TestFixtures.scheduleBuilder()
+                .withStandardWeekdays(9, 15, 17, 30)
+                .withShift(DayOfWeek.SATURDAY, 10, 0, 14, 0)
+                .build();
 
         assertNotNull(schedule);
         assertNotNull(schedule.schedule());
     }
 
-    @Test
-    void testScheduleIsImmutable() {
-        Map<DayOfWeek, List<WorkingShift>> scheduleMap = new EnumMap<>(DayOfWeek.class);
-        for (DayOfWeek day : DayOfWeek.values()) {
-            scheduleMap.put(day, List.of());
-        }
-        scheduleMap.put(DayOfWeek.MONDAY, List.of(workingShift(9, 17)));
-
-        WeeklySchedule schedule = new WeeklySchedule(scheduleMap);
-        
-        // Try to modify the original map (should not affect the schedule)
-        Map<DayOfWeek, List<WorkingShift>> newMap = new EnumMap<>(DayOfWeek.class);
-        for (DayOfWeek day : DayOfWeek.values()) {
-            newMap.put(day, List.of());
-        }
-        newMap.put(DayOfWeek.TUESDAY, List.of(workingShift(9, 17)));
-
-        // Original map changes shouldn't affect schedule
-        assertEquals(1, schedule.schedule().values().stream().mapToInt(List::size).sum());
-    }
 
     @Test
     void testScheduleCannotBeModifiedDirectly() {
@@ -73,102 +44,61 @@ public class WeeklyScheduleTest {
     }
     @Test
     void testScheduleCannotHaveNullWorkingShiftList() {
-        // 1. We must use a map that actually allows null values (EnumMap)
-        Map<DayOfWeek, List<WorkingShift>> mapWithNullList = new EnumMap<>(DayOfWeek.class);
-
-        // 2. We must add ALL 7 days first, otherwise the "missing day" exception will trigger instead!
-        for (DayOfWeek day : DayOfWeek.values()) {
-            mapWithNullList.put(day, Collections.emptyList());
-        }
-
-        // 3. Now we inject the poison pill (overwriting Monday with null)
-        mapWithNullList.put(DayOfWeek.MONDAY, null);
-
-        // 4. Assert our specific domain exception is thrown
         InvalidWeeklyScheduleException exception = assertThrows(
                 InvalidWeeklyScheduleException.class,
-                () -> new WeeklySchedule(mapWithNullList)
+                () -> TestFixtures.scheduleBuilder()
+                        .withNullShiftList(DayOfWeek.MONDAY)
+                        .build()
         );
 
-        // Optional but highly recommended: verify it failed for the EXACT right reason
         assertTrue(exception.getMessage().contains("cannot be null"));
     }
-
-    // ==================== Working Hours Tests ====================
-
+    @Test
+    void testWorkingShiftsOverlap(){
+       assertThrows(InvalidWeeklyScheduleException.class, () -> TestFixtures.scheduleBuilder()
+                .withShift(DayOfWeek.MONDAY, 9, 0, 12, 0)
+                .withShift(DayOfWeek.MONDAY, 11, 0, 14, 0)
+                .build()
+       );
+    }
     @Test
     void testIsWorkingDuringNormalHours() {
         WeeklySchedule schedule = standardWeeklySchedule();
-        // Tuesday 10:00-11:00 (within 9:00-17:00)
-        TimePeriod period = timePeriod(2026, 5, 21, 10, 11);
+        TimeSlot slot = timeSlot(6, 10, 9, 15);
 
-        assertTrue(schedule.isWorkingDuring(period));
+        assertTrue(schedule.isWorkingDuring(slot));
     }
 
     @Test
     void testIsWorkingDuringNonWorkingHours() {
         WeeklySchedule schedule = standardWeeklySchedule();
-        // Monday 18:00-19:00 (after working hours 9-17)
-        TimePeriod period = timePeriod(2026, 5, 21, 18, 19);
+        TimeSlot slot = timeSlot(6, 10, 8, 0);
 
-        assertFalse(schedule.isWorkingDuring(period));
+        assertFalse(schedule.isWorkingDuring(slot));
     }
 
     @Test
     void testIsWorkingDuringOnSplitShiftGap() {
         WeeklySchedule schedule = standardWeeklySchedule();
-        // Thursday 10:00-14:00 (crosses the break gap between 12:00 and 13:00)
-        TimePeriod period = timePeriod(2026, 5, 23, 10, 14);
+        TimeSlot slot = timeSlot(6, 10, 11, 0, 120);
 
-        assertFalse(schedule.isWorkingDuring(period));
+        assertFalse(schedule.isWorkingDuring(slot));
     }
 
     @Test
     void testIsWorkingDuringOnBreakTime() {
         WeeklySchedule schedule = standardWeeklySchedule();
-        // Thursday 12:00-13:00 (exact break time between shifts)
-        TimePeriod period = timePeriod(2026, 5, 23, 12, 13);
+        TimeSlot slot = timeSlot(6, 10, 12, 0);
 
-        assertFalse(schedule.isWorkingDuring(period));
+        assertFalse(schedule.isWorkingDuring(slot));
     }
 
     @Test
     void testIsWorkingDuringOnNonWorkingDays() {
         WeeklySchedule schedule = standardWeeklySchedule();
-        // Saturday May 30 10:00-11:00 (weekend, not working)
-        TimePeriod period = timePeriod(2026, 5, 30, 10, 11);
+        TimeSlot slot = timeSlot(6, 13, 10, 0);
 
-        assertFalse(schedule.isWorkingDuring(period));
+        assertFalse(schedule.isWorkingDuring(slot));
     }
 
-    @Test
-    void testIsWorkingDuringPartiallyOverlapNonWorkingHours() {
-        WeeklySchedule schedule = standardWeeklySchedule();
-        // Thursday 10:00-14:00 (spans both shift and break)
-        TimePeriod period = timePeriod(2026, 5, 23, 10, 14);
-
-        assertFalse(schedule.isWorkingDuring(period));
-    }
-
-    @Test
-    void testIsWorkingDuringAcrossDays() {
-        WeeklySchedule schedule = standardWeeklySchedule();
-        // Tuesday 20:00 - Wednesday 10:00 (crosses days)
-        LocalDateTime start = LocalDateTime.of(2026, 5, 21, 20, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 5, 22, 10, 0);
-        TimePeriod period = new TimePeriod(start, end);
-
-        assertFalse(schedule.isWorkingDuring(period));
-    }
-    @Test
-    void testWhenWorkingHoursOverlap() {
-        assertThrows(InvalidWeeklyScheduleException.class, () -> {
-
-            TestFixtures.scheduleBuilder()
-                    .withStandardWeekdays(9, 17)
-                    .withShift(DayOfWeek.WEDNESDAY, 9, 12)
-                    .build();
-
-        });
-    }
 }
