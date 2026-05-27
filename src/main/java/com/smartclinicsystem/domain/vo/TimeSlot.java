@@ -1,5 +1,7 @@
 package com.smartclinicsystem.domain.vo;
 
+import com.smartclinicsystem.domain.exception.InvalidTimeSlotException;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,7 +10,7 @@ public record TimeSlot(LocalDate date, SharpTime start, Duration duration) {
 
     public TimeSlot {
         if (date == null || start == null || duration == null) {
-            throw new IllegalArgumentException("Date, start time, and duration are required.");
+            throw new InvalidTimeSlotException("Date, start time, and duration are required.");
         }
     }
     public SharpTime getEnd() {
