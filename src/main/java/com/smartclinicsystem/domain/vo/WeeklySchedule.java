@@ -45,15 +45,12 @@ public record WeeklySchedule(Map<DayOfWeek, List<WorkingShift>> schedule) {
         schedule = Collections.unmodifiableMap(schedule);
     }
 
-    public boolean isWorkingDuring(TimePeriod requestedPeriod) {
+    public boolean isWorkingDuring(TimeSlot requestedPeriod) {
 
-        if (!requestedPeriod.startTime().toLocalDate().equals(requestedPeriod.endTime().toLocalDate())) {
-            return false;
-        }
-        DayOfWeek requestedDay = requestedPeriod.startTime().getDayOfWeek();
+        DayOfWeek requestedDay = requestedPeriod.date().getDayOfWeek();
         List<WorkingShift> shiftsForDay = schedule.getOrDefault(requestedDay, List.of());
         return shiftsForDay.stream()
-                .anyMatch(shift -> shift.covers(requestedPeriod.startTime().toLocalTime(),
-                        requestedPeriod.endTime().toLocalTime()));
+                .anyMatch(shift -> shift.covers(requestedPeriod.start().time(),
+                        requestedPeriod.getEnd().time()));
     }
 }

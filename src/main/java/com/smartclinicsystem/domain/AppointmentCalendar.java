@@ -28,7 +28,7 @@ public class AppointmentCalendar {
         this.appointments = new ArrayList<>(appointments);
     }
 
-    public void addAppointment(PatientId patientId, TimePeriod appointmentTime) {
+    public void addAppointment(PatientId patientId, TimeSlot appointmentTime) {
             validateBookingRules(appointmentTime);
             Appointment proposedAppointment = new Appointment(patientId, appointmentTime);
             appointments.add(proposedAppointment);
@@ -56,7 +56,7 @@ public class AppointmentCalendar {
 
     public void rescheduleActiveAppointment(
             AppointmentId oldAppointmentId,
-            TimePeriod newTimePeriod,
+            TimeSlot newTimeSlot,
             Appointment.CancellationInitiator initiator) {
 
         Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
@@ -65,13 +65,13 @@ public class AppointmentCalendar {
             throw new BookingException("Only active appointments can be actively rescheduled.");
         }
 
-        validateBookingRules(newTimePeriod);
+        validateBookingRules(newTimeSlot);
         oldAppointment.cancel(initiator);
 
 
         Appointment rescheduledAppointment = new Appointment(
                 oldAppointment.getPatientId(),
-                newTimePeriod,
+                newTimeSlot,
                 oldAppointmentId
         );
         appointments.add(rescheduledAppointment);
@@ -79,7 +79,7 @@ public class AppointmentCalendar {
 
     public void rescheduleSystemCancelledAppointment(
             AppointmentId oldAppointmentId,
-            TimePeriod newTimePeriod) {
+            TimeSlot newTimeSlot) {
 
         Appointment oldAppointment = findAppointmentOrThrow(oldAppointmentId);
 
@@ -89,46 +89,46 @@ public class AppointmentCalendar {
                     "This method is only for replacing appointments that the system previously cancelled.");
         }
 
-        validateBookingRules(newTimePeriod);
+        validateBookingRules(newTimeSlot);
 
 
         Appointment rescheduledAppointment = new Appointment(
                 oldAppointment.getPatientId(),
-                newTimePeriod,
+                newTimeSlot,
                 oldAppointmentId
         );
         appointments.add(rescheduledAppointment);
     }
 
 
-    private void updateAppointmentsOnNewUnavailability(TimePeriod newLeavePeriod) {
+    private void updateAppointmentsOnNewUnavailability(Unavailability newUnavailability) {
         this.appointments.stream()
                 .filter(Appointment::isScheduled)
-                .filter(app -> app.getTimePeriod().overlapsWith(newLeavePeriod))
+                .filter(app -> newUnavailability.isUnavailableIn(app.getAppointmentTimeSlot()))
                 .forEach(app -> app.cancel(Appointment.CancellationInitiator.CLINIC_RECEPTION));
     }
 
     private void updateAppointmentsOnScheduleChange(EffectiveSchedule newlyAddedSchedule) {
         this.appointments.stream()
                 .filter(Appointment::isScheduled)
-                .filter(app -> newlyAddedSchedule.appliesTo(app.getTimePeriod().startTime().toLocalDate()))
-                .filter(app -> !newlyAddedSchedule.schedule().isWorkingDuring(app.getTimePeriod()))
+                .filter(app -> newlyAddedSchedule.appliesTo(app.getAppointmentTimeSlot().date()))
+                .filter(app -> !newlyAddedSchedule.schedule().isWorkingDuring(app.getAppointmentTimeSlot()))
                 .forEach(app -> app.cancel(Appointment.CancellationInitiator.CLINIC_RECEPTION));
     }
 
-    private boolean isDoctorAvailable(TimePeriod requestedTime) {
+    private boolean isDoctorAvailable(TimeSlot requestedTime) {
         return this.unavailabilities.stream()
                 .noneMatch(unavail -> unavail.isUnavailableIn(requestedTime));
     }
 
-    private boolean isNotAlreadyBooked(TimePeriod requestedTime) {
+    private boolean isNotAlreadyBooked(TimeSlot requestedTimeSlot) {
         return this.appointments.stream()
                 .filter(Appointment::isScheduled)
-                .noneMatch(app -> app.getTimePeriod().overlapsWith(requestedTime));
+                .noneMatch(app -> app.getAppointmentTimeSlot().overlapsWith(requestedTimeSlot));
     }
 
-    private boolean isDoctorWorking(TimePeriod requestedPeriod) {
-        LocalDate requestedDate = requestedPeriod.startTime().toLocalDate();
+    private boolean isDoctorWorking(TimeSlot requestedPeriod) {
+        LocalDate requestedDate = requestedPeriod.date();
 
         EffectiveSchedule activeSchedule = this.effectiveSchedules.stream()
                 .filter(schedule -> schedule.appliesTo(requestedDate))
@@ -141,8 +141,9 @@ public class AppointmentCalendar {
     }
 
     public void addUnavailability(TimePeriod leavePeriod) {
-        this.unavailabilities.add(new Unavailability(leavePeriod));
-        updateAppointmentsOnNewUnavailability(leavePeriod);
+        Unavailability newUnavailability = new Unavailability(leavePeriod);
+        this.unavailabilities.add(newUnavailability);
+        updateAppointmentsOnNewUnavailability(newUnavailability);
     }
 
     public void changeSchedule(WeeklySchedule newSchedule, LocalDate effectiveDate) {
@@ -170,14 +171,14 @@ public class AppointmentCalendar {
         ));
     }
 
-    public void validateBookingRules(TimePeriod requestedTime) {
-        if (!isDoctorWorking(requestedTime)) {
+    public void validateBookingRules(TimeSlot requestedTimeSlot) {
+        if (!isDoctorWorking(requestedTimeSlot)) {
             throw new BookingException("Cannot book: The requested time falls outside working hours.");
         }
-        if (!isDoctorAvailable(requestedTime)) {
+        if (!isDoctorAvailable(requestedTimeSlot)) {
             throw new BookingException("Cannot book: The doctor is on leave during this time.");
         }
-        if (!isNotAlreadyBooked(requestedTime)) {
+        if (!isNotAlreadyBooked(requestedTimeSlot)) {
             throw new BookingException("Cannot book: This time slot is already taken.");
         }
     }

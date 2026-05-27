@@ -31,7 +31,6 @@ public class CalendarFixtures {
         LocalDateTime start = LocalDateTime.of(2026, 6, 10, 9, 0);
         LocalDateTime end = LocalDateTime.of(2026, 6, 12, 17, 0);
 
-        // Bypass the helper method so we don't lose the end date!
         return new Unavailability(
                 new TimePeriod(start, end)
         );
@@ -50,8 +49,8 @@ public class CalendarFixtures {
         ));
 
         List<Appointment> existingAppointments = new ArrayList<>(List.of(
-                appointment(patientId("pat-june-1"), timePeriod(2026, 6, 2, 10)),
-                appointment(patientId("pat-june-2"), timePeriod(2026, 6, 4, 14))
+                appointment(patientId("pat-june-1"), timeSlot(6, 2,10 ,15)),
+                appointment(patientId("pat-june-2"), timeSlot(6, 4,13 ,15))
         ));
 
         return new AppointmentCalendar(

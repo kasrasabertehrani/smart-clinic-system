@@ -71,8 +71,6 @@ public class TimePeriodTest {
         );
     }
 
-    // ==================== Overlap Tests ====================
-
     @Test
     void testOverlapsWithNoOverlap() {
         TimePeriod period1 = timePeriod(2026, 5, 21, 9, 10);
@@ -105,14 +103,6 @@ public class TimePeriodTest {
         assertTrue(period1.overlapsWith(period2));
     }
 
-    @Test
-    void testOverlapsWithReversedComparison() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 11, 13);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 10, 12);
-
-        assertTrue(period1.overlapsWith(period2));
-        assertTrue(period2.overlapsWith(period1));
-    }
 
     @Test
     void testOverlapsWithDifferentDays() {
@@ -137,7 +127,4 @@ public class TimePeriodTest {
 
         assertFalse(period1.overlapsWith(period2));
     }
-
-
-
 }

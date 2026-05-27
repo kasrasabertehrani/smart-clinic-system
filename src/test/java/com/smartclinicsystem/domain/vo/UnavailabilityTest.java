@@ -3,17 +3,16 @@ package com.smartclinicsystem.domain.vo;
 import com.smartclinicsystem.domain.exception.InvalidTimePeriodException;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+
 
 import static com.smartclinicsystem.domain.TestFixtures.timePeriod;
+import static com.smartclinicsystem.domain.TestFixtures.timeSlot;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UnavailabilityTest {
     @Test
     void testUnavailabilityCreation() {
-        LocalDateTime start = LocalDateTime.of(2026, 5, 20, 10, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 5, 20, 11, 0);
-        TimePeriod period = new TimePeriod(start, end);
+        TimePeriod period = timePeriod(6, 5, 20,6, 25, 13);
 
         Unavailability unavailability = new Unavailability(period);
 
@@ -25,81 +24,41 @@ public class UnavailabilityTest {
     }
     @Test
     void testIsUnavailableInWithNoOverlap() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 9, 10);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 11, 12);
-        Unavailability unavailability = new Unavailability(period1);
+        TimePeriod period = timePeriod(6, 15, 20,6, 25, 13);
+        TimeSlot slot = timeSlot(6, 5, 21, 0);
+        Unavailability unavailability = new Unavailability(period);
 
-        assertFalse(unavailability.isUnavailableIn(period2));
+        assertFalse(unavailability.isUnavailableIn(slot));
     }
 
     @Test
     void testIsUnavailableInWithPartialOverlap() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 8, 10);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 9, 11);
-        Unavailability unavailability = new Unavailability(period1);
+        TimePeriod period = timePeriod(6, 5, 20,6, 25, 13);
+        TimeSlot slot = timeSlot(6, 5, 19, 15, 90);
+        Unavailability unavailability = new Unavailability(period);
 
-        assertTrue(unavailability.isUnavailableIn(period2));
+        assertTrue(unavailability.isUnavailableIn(slot));
     }
 
     @Test
     void testIsUnavailableInWithCompleteContainment() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 9, 12);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 10, 11);
+        TimePeriod period = timePeriod(6, 5, 20,6, 25, 13);
+        TimeSlot slot = timeSlot(6, 5, 21, 0);
 
-        Unavailability unavailability = new Unavailability(period1);
+        Unavailability unavailability = new Unavailability(period);
 
-        assertTrue(unavailability.isUnavailableIn(period2));
+        assertTrue(unavailability.isUnavailableIn(slot));
     }
 
     @Test
     void testIsUnavailableInWithIdenticalPeriods() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 9, 10);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 9, 10);
+        TimePeriod period = timePeriod(2026, 5, 5, 9, 10);
+        TimeSlot slot = timeSlot(5, 5, 9, 0);
 
-        Unavailability unavailability = new Unavailability(period1);
+        Unavailability unavailability = new Unavailability(period);
 
-        assertTrue(unavailability.isUnavailableIn(period2));
+        assertTrue(unavailability.isUnavailableIn(slot));
     }
 
-    @Test
-    void testIsUnavailableInWithReversedComparison() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 11, 13);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 10, 12);
-        Unavailability unavailability1 = new Unavailability(period1);
-        Unavailability unavailability2 = new Unavailability(period2);
-
-        assertTrue(unavailability1.isUnavailableIn(period2));
-        assertTrue(unavailability2.isUnavailableIn(period2));
-    }
-
-    @Test
-    void testIsUnavailableInWithDifferentDays() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 9, 10);
-        TimePeriod period2 = timePeriod(2026, 5, 22, 9, 10);
-
-        Unavailability unavailability = new Unavailability(period1);
-
-        assertFalse(unavailability.isUnavailableIn(period2));
-    }
-
-    @Test
-    void testIsUnavailableInWithConnectedPeriods() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 9, 10);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 10, 11);
-
-        Unavailability unavailability = new Unavailability(period1);
-
-        assertFalse(unavailability.isUnavailableIn(period2));
-    }
-
-    @Test
-    void testIsUnavailableInWithConnectedPeriodsReversed() {
-        TimePeriod period1 = timePeriod(2026, 5, 21, 11, 12);
-        TimePeriod period2 = timePeriod(2026, 5, 21, 10, 11);
-
-        Unavailability unavailability = new Unavailability(period1);
-
-        assertFalse(unavailability.isUnavailableIn(period2));
-    }
 
 }

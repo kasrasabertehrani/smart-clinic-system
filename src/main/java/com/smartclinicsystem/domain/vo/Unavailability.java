@@ -11,8 +11,10 @@ public Unavailability {
     }
 }
 
-    public boolean isUnavailableIn(TimePeriod other) {
-        return this.unavailabilityPeriod.overlapsWith(other);
+    public boolean isUnavailableIn(TimeSlot requestedTimeSlot) {
+        TimePeriod requestedPeriod = new TimePeriod(requestedTimeSlot.getStartDateTime(),
+                requestedTimeSlot.getEndDateTime());
+        return this.unavailabilityPeriod.overlapsWith(requestedPeriod);
     }
 
 }

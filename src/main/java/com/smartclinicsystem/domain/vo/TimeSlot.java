@@ -19,6 +19,10 @@ public record TimeSlot(LocalDate date, SharpTime start, Duration duration) {
         return LocalDateTime.of(date, start.time());
     }
 
+    public LocalDateTime getEndDateTime() {
+        return LocalDateTime.of(date, getEnd().time());
+    }
+
     public boolean overlapsWith(TimeSlot other) {
         if (!this.date.equals(other.date())) {
             return false;

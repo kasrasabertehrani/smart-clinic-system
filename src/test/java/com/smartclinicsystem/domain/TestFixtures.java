@@ -18,22 +18,40 @@ public class TestFixtures {
         LocalDateTime end = LocalDateTime.of(year, month, day, endHour, 0);
         return new TimePeriod(start, end);
     }
+    public static TimePeriod timePeriod(int startMonth, int startDay, int startHour,
+                                        int endMonth, int endDay,  int endHour){
+        LocalDateTime start = LocalDateTime.of(2026, startMonth, startDay, startHour, 15);
+        LocalDateTime end = LocalDateTime.of(2026, endMonth, endDay, endHour, 30);
+        return new TimePeriod(start, end);
+    }
 
 
     public static TimePeriod timePeriod(int year, int month, int day, int hour) {
         return timePeriod(year, month, day, hour, hour + 1);
     }
 
+    public static TimeSlot timeSlot(int month, int day, int hour, int minute) {
+        return new TimeSlot(LocalDate.of(2026, month, day),
+                sharpTime(hour, minute), java.time.Duration.ofHours(1));
+    }
+    public static TimeSlot timeSlot(int month, int day, int hour, int minute, int durationInMinutes) {
+        return new TimeSlot(LocalDate.of(2026, month, day),
+                sharpTime(hour, minute), java.time.Duration.ofMinutes(durationInMinutes));
+    }
 
-    public static SharpTime sharpTime(int hour) {
-        return SharpTime.of(hour);
+
+    public static SharpTime sharpTime(int hour, int minute) {
+        return SharpTime.of(hour, minute);
     }
 
 
 
 
     public static WorkingShift workingShift(int startHour, int endHour) {
-        return new WorkingShift(sharpTime(startHour), sharpTime(endHour));
+        return new WorkingShift(sharpTime(startHour, 0), sharpTime(endHour, 0));
+    }
+    public static WorkingShift workingShift(int startHour, int startMinute, int endHour, int endMinute) {
+        return new WorkingShift(sharpTime(startHour, startMinute), sharpTime(endHour, endMinute));
     }
 
 
@@ -49,14 +67,14 @@ public class TestFixtures {
     public static WeeklySchedule standardWeeklySchedule() {
         Map<DayOfWeek, List<WorkingShift>> weeklyMap = new EnumMap<>(DayOfWeek.class);
 
-        weeklyMap.put(DayOfWeek.MONDAY, List.of(workingShift(9, 17)));
-        weeklyMap.put(DayOfWeek.TUESDAY, List.of(workingShift(9, 17)));
-        weeklyMap.put(DayOfWeek.WEDNESDAY, List.of(workingShift(8, 12)));
+        weeklyMap.put(DayOfWeek.MONDAY, List.of(workingShift(9,15, 17,30)));
+        weeklyMap.put(DayOfWeek.TUESDAY, List.of(workingShift(9, 15, 17, 30)));
+        weeklyMap.put(DayOfWeek.WEDNESDAY, List.of(workingShift(8,30, 12,30)));
         weeklyMap.put(DayOfWeek.THURSDAY, List.of(
                 workingShift(9, 12),
                 workingShift(13, 18)
         ));
-        weeklyMap.put(DayOfWeek.FRIDAY, List.of(workingShift(10, 16)));
+        weeklyMap.put(DayOfWeek.FRIDAY, List.of(workingShift(10,45 , 16,15)));
         weeklyMap.put(DayOfWeek.SATURDAY, Collections.emptyList());
         weeklyMap.put(DayOfWeek.SUNDAY, Collections.emptyList());
 
@@ -71,16 +89,16 @@ public class TestFixtures {
 
 
     public static Appointment appointment(PatientId patientId, int hour) {
-        return new Appointment(patientId, timePeriod(2026, 6, 21, hour));
+        return new Appointment(patientId, timeSlot(6, 20, hour, 0));
+    }
+
+    public static Appointment appointment(PatientId patientId, TimeSlot timeSlot) {
+        return new Appointment(patientId, timeSlot);
     }
 
 
-    public static Appointment appointment(PatientId patientId, TimePeriod timePeriod) {
-        return new Appointment(patientId, timePeriod);
-    }
-
-    public static Appointment appointment(PatientId patientId, TimePeriod timePeriod, AppointmentId rescheduledFromId) {
-        return new Appointment(patientId, timePeriod, rescheduledFromId);
+    public static Appointment appointment(PatientId patientId, TimeSlot timeSlot, AppointmentId rescheduledFromId) {
+        return new Appointment(patientId, timeSlot, rescheduledFromId);
     }
 
 
@@ -113,8 +131,8 @@ public class TestFixtures {
             }
         }
 
-        public WeeklyScheduleBuilder withStandardWeekdays(int startHour, int endHour) {
-            WorkingShift shift = workingShift(startHour, endHour);
+        public WeeklyScheduleBuilder withStandardWeekdays(int startHour,int startMinute, int endHour, int endMinute) {
+            WorkingShift shift = workingShift(startHour, startMinute, endHour, endMinute);
             map.get(DayOfWeek.MONDAY).add(shift);
             map.get(DayOfWeek.TUESDAY).add(shift);
             map.get(DayOfWeek.WEDNESDAY).add(shift);
@@ -123,18 +141,19 @@ public class TestFixtures {
             return this;
         }
 
-        public WeeklyScheduleBuilder withShift(DayOfWeek day, int startHour, int endHour) {
-            map.get(day).add(workingShift(startHour, endHour));
+        public WeeklyScheduleBuilder withShift(DayOfWeek day, int startHour,int startMinute, int endHour
+                , int endMinute) {
+            map.get(day).add(workingShift(startHour, startMinute, endHour, endMinute));
+            return this;
+        }
+
+        public WeeklyScheduleBuilder withNullShiftList(DayOfWeek day) {
+            map.put(day, null);
             return this;
         }
 
         public WeeklySchedule build() {
             return new WeeklySchedule(map);
-        }
-        public WeeklyScheduleBuilder overrideDay(DayOfWeek day, int startHour, int endHour) {
-            map.get(day).clear();
-            map.get(day).add(workingShift(startHour, endHour));
-            return this;
         }
     }
 

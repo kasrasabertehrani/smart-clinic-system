@@ -3,7 +3,7 @@ package com.smartclinicsystem.domain;
 import com.smartclinicsystem.domain.exception.AppointmentException;
 import com.smartclinicsystem.domain.vo.AppointmentId;
 import com.smartclinicsystem.domain.vo.PatientId;
-import com.smartclinicsystem.domain.vo.TimePeriod;
+import com.smartclinicsystem.domain.vo.TimeSlot;
 import lombok.Getter;
 
 import java.time.Duration;
@@ -18,33 +18,32 @@ public class Appointment {
     private final AppointmentId id;
     private AppointmentId rescheduledFromId;
     private final PatientId patientId;
-    private final TimePeriod timePeriod;
+    private final TimeSlot appointmentTimeSlot;
     private status appointmentStatus;
     private CancellationInitiator cancelledBy;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public Appointment(PatientId patientId, TimePeriod timePeriod) {
+    public Appointment(PatientId patientId, TimeSlot appointmentTimeSlot) {
 
-        if (timePeriod.startTime().isBefore(LocalDateTime.now())) {
+        if(appointmentTimeSlot.date().isBefore(LocalDateTime.now().toLocalDate())) {
             throw new AppointmentException("Cannot schedule an appointment in the past.");
         }
 
-        long durationInMinutes = Duration.between(timePeriod.startTime(), timePeriod.endTime()).toMinutes();
-        if (durationInMinutes != 60) {
-            throw new AppointmentException("Appointment duration must be exactly 60 minutes.");
+        if (appointmentTimeSlot.duration().toMinutes() != 60) {
+            throw new AppointmentException("Only 1-hour appointments are supported.");
         }
 
         this.id = new AppointmentId(UUID.randomUUID().toString());
         this.patientId = patientId;
-        this.timePeriod = timePeriod;
+        this.appointmentTimeSlot = appointmentTimeSlot;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = createdAt;
         this.appointmentStatus = status.SCHEDULED;
     }
 
-    public Appointment(PatientId patientId, TimePeriod timePeriod, AppointmentId rescheduledFromId) {
-        this(patientId, timePeriod);
+    public Appointment(PatientId patientId, TimeSlot appointmentTimeSlot, AppointmentId rescheduledFromId) {
+        this(patientId, appointmentTimeSlot);
         this.rescheduledFromId = rescheduledFromId;
     }
 
@@ -77,7 +76,7 @@ public class Appointment {
     }
 
     public void markAsNoShow() {
-        if (this.appointmentStatus != status.CHECKED_IN) {
+        if (this.appointmentStatus != status.SCHEDULED) {
             throw new AppointmentException("Only CHECKED_IN appointments can be marked as No-Show.");
         }
         this.appointmentStatus = status.NO_SHOW;
