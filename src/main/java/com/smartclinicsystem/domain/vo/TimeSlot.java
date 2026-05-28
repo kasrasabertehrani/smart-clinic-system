@@ -12,6 +12,9 @@ public record TimeSlot(LocalDate date, SharpTime start, Duration duration) {
         if (date == null || start == null || duration == null) {
             throw new InvalidTimeSlotException("Date, start time, and duration are required.");
         }
+        if (duration.isNegative() || duration.isZero()) {
+            throw new InvalidTimeSlotException("Duration must be positive.");
+        }
     }
     public SharpTime getEnd() {
         return start.plus(duration);
