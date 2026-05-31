@@ -52,12 +52,13 @@ public class AppointmentCalendar {
         return activeSchedule.schedule().isWorkingDuring(requestedPeriod);
     }
 
-    public void addUnavailability(TimePeriod leavePeriod) {
+    public Unavailability addUnavailability(TimePeriod leavePeriod) {
         Unavailability newUnavailability = new Unavailability(leavePeriod);
         this.unavailabilities.add(newUnavailability);
+        return newUnavailability;
     }
 
-    public void changeSchedule(WeeklySchedule newSchedule, LocalDate effectiveDate) {
+    public EffectiveSchedule changeSchedule(WeeklySchedule newSchedule, LocalDate effectiveDate) {
         boolean dateAlreadyExists = this.effectiveSchedules.stream()
                 .anyMatch(existing -> existing.validFrom().equals(effectiveDate));
 
@@ -70,6 +71,7 @@ public class AppointmentCalendar {
 
         EffectiveSchedule newEffectiveSchedule = new EffectiveSchedule(effectiveDate, newSchedule);
         this.effectiveSchedules.add(newEffectiveSchedule);
+        return newEffectiveSchedule;
     }
 
 
