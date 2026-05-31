@@ -88,17 +88,17 @@ public class TestFixtures {
 
 
 
-    public static Appointment appointment(PatientId patientId, int hour) {
-        return new Appointment(patientId, timeSlot(6, 20, hour, 0));
+    public static Appointment appointment(DoctorId doctorId,PatientId patientId, int hour) {
+        return new Appointment(doctorId ,patientId, timeSlot(6, 20, hour, 0));
     }
 
-    public static Appointment appointment(PatientId patientId, TimeSlot timeSlot) {
-        return new Appointment(patientId, timeSlot);
+    public static Appointment appointment(DoctorId doctorId ,PatientId patientId, TimeSlot timeSlot) {
+        return new Appointment(doctorId ,patientId, timeSlot);
     }
 
 
-    public static Appointment appointment(PatientId patientId, TimeSlot timeSlot, AppointmentId rescheduledFromId) {
-        return new Appointment(patientId, timeSlot, rescheduledFromId);
+    public static Appointment appointment(DoctorId doctorId ,PatientId patientId, TimeSlot timeSlot, AppointmentId rescheduledFromId) {
+        return new Appointment(doctorId ,patientId, timeSlot, rescheduledFromId);
     }
 
 
