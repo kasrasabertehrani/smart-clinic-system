@@ -48,16 +48,13 @@ public class CalendarFixtures {
                 customUnavailability()
         ));
 
-        List<Appointment> existingAppointments = new ArrayList<>(List.of(
-                appointment(patientId("pat-june-1"), timeSlot(6, 2,10 ,15)),
-                appointment(patientId("pat-june-2"), timeSlot(6, 4,13 ,15))
-        ));
+
 
         return new AppointmentCalendar(
                 doctorId,
                 schedules,
-                unavailabilities,
-                existingAppointments
+                unavailabilities
+
         );
     }
 }
