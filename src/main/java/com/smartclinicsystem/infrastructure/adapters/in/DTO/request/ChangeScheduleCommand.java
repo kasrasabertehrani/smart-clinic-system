@@ -1,4 +1,4 @@
-package com.smartclinicsystem.infrastructure.adapters.in;
+package com.smartclinicsystem.infrastructure.adapters.in.DTO.request;
 
 import com.smartclinicsystem.domain.vo.SharpTime;
 import com.smartclinicsystem.domain.vo.WeeklySchedule;

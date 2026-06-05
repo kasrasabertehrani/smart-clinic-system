@@ -1,4 +1,4 @@
-package com.smartclinicsystem.infrastructure.adapters.in;
+package com.smartclinicsystem.infrastructure.adapters.in.DTO.request;
 
 import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.vo.SharpTime;
@@ -6,13 +6,11 @@ import com.smartclinicsystem.domain.vo.TimeSlot;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public class RescheduleAppointmentCommand {
-
+public class RescheduleSystemCanceledCommand {
     @NotNull(message = "date is required")
     @Future(message = "date must be in the future")
     private LocalDate appointmentDate;
@@ -30,6 +28,4 @@ public class RescheduleAppointmentCommand {
     public Appointment.CancellationInitiator getCancelInitiator() {
         return cancelInitiator;
     }
-
-
 }

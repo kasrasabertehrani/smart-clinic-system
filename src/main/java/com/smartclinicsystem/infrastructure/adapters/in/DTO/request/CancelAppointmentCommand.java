@@ -1,4 +1,4 @@
-package com.smartclinicsystem.infrastructure.adapters.in;
+package com.smartclinicsystem.infrastructure.adapters.in.DTO.request;
 
 import com.smartclinicsystem.domain.Appointment;
 import jakarta.validation.constraints.NotNull;
