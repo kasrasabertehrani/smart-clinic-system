@@ -27,6 +27,12 @@ public class AppointmentCalendar {
 
     }
 
+    public AppointmentCalendar(DoctorId doctorId) {
+        this.doctorId = doctorId;
+        this.effectiveSchedules = new ArrayList<>();
+        this.unavailabilities = new ArrayList<>();
+    }
+
 
 
     private boolean isDoctorAvailable(TimeSlot requestedTime) {

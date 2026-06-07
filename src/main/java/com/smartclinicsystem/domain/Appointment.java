@@ -50,6 +50,29 @@ public class Appointment {
         this.rescheduledFromId = rescheduledFromId;
     }
 
+
+    public Appointment(AppointmentId id,
+                       DoctorId doctorId,
+                       PatientId patientId,
+                       TimeSlot appointmentTimeSlot,
+                       status appointmentStatus,
+                       CancellationInitiator cancelledBy,
+                       AppointmentId rescheduledFromId,
+                       LocalDateTime createdAt,
+                       LocalDateTime updatedAt) {
+
+
+        this.id = id;
+        this.doctorId = doctorId;
+        this.patientId = patientId;
+        this.appointmentTimeSlot = appointmentTimeSlot;
+        this.appointmentStatus = appointmentStatus;
+        this.cancelledBy = cancelledBy;
+        this.rescheduledFromId = rescheduledFromId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
     public void cancel(CancellationInitiator initiator) {
         if (isScheduled() || appointmentStatus == status.CHECKED_IN) {
             this.appointmentStatus = status.CANCELLED;
