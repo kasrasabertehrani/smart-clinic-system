@@ -7,13 +7,13 @@ import com.smartclinicsystem.application.port.out.AppointmentRepositoryPort;
 import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.AppointmentCalendar;
 import com.smartclinicsystem.domain.vo.*;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.AddAppointmentCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.CancelAppointmentCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.RescheduleAppointmentCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.RescheduleSystemCanceledCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.AppointmentResponse;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.CancelAppointmentResponse;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.RescheduleAppointmentResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.AddAppointmentCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.CancelAppointmentCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.RescheduleAppointmentCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.RescheduleSystemCanceledCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.AppointmentResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.CancelAppointmentResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.RescheduleAppointmentResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -80,8 +80,7 @@ public class SchedulingService implements SchedulingUseCase {
     }
 
     @Override
-    public RescheduleAppointmentResponse rescheduleActiveAppointment(RescheduleAppointmentCommand command, String appointment_id,
-                                            String doctor_id) {
+    public RescheduleAppointmentResponse rescheduleActiveAppointment(RescheduleAppointmentCommand command, String appointment_id) {
         AppointmentId appointmentId = new AppointmentId(appointment_id);
         Appointment oldAppointment = appointmentRepository.findAppointmentId(appointmentId);
         validateTimeSlotAvailability(oldAppointment.getDoctorId(), command.createTimeSlot());
@@ -95,8 +94,8 @@ public class SchedulingService implements SchedulingUseCase {
         return RescheduleAppointmentResponse.from(newAppointment);
     }
     @Override
-    public RescheduleAppointmentResponse rescheduleSystemCanceledAppointment(RescheduleSystemCanceledCommand command, String appointment_id,
-                                                                             String doctor_id) {
+    public RescheduleAppointmentResponse rescheduleSystemCanceledAppointment(RescheduleSystemCanceledCommand command,
+                                                                             String appointment_id) {
         AppointmentId appointmentId = new AppointmentId(appointment_id);
         Appointment oldAppointment = appointmentRepository.findAppointmentId(appointmentId);
         validateTimeSlotAvailability(oldAppointment.getDoctorId(), command.createTimeSlot());

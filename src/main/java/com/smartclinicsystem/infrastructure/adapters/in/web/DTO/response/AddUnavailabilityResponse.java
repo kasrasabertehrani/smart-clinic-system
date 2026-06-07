@@ -1,4 +1,4 @@
-package com.smartclinicsystem.infrastructure.adapters.in.DTO.response;
+package com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response;
 
 import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.vo.Unavailability;
