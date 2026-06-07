@@ -1,5 +1,6 @@
 package com.smartclinicsystem.application.service;
 
+import com.smartclinicsystem.application.exception.ConcurrentOperationException;
 import com.smartclinicsystem.application.port.in.SchedulingUseCase;
 import com.smartclinicsystem.application.port.out.AppointmentCalendarRepositoryPort;
 import com.smartclinicsystem.application.port.out.AppointmentRepositoryPort;
@@ -14,6 +15,7 @@ import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.Appointment
 import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.CancelAppointmentResponse;
 import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.RescheduleAppointmentResponse;
 import jakarta.transaction.Transactional;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 
@@ -40,7 +42,7 @@ public class SchedulingService implements SchedulingUseCase {
 
         validateTimeSlotAvailability(doctorId, timeSlot);
         Appointment newAppointment = new Appointment(doctorId, patientId, timeSlot);
-        appointmentRepository.save(newAppointment);
+        saveWithConcurrencyCheck(newAppointment);
         return AppointmentResponse.from(newAppointment);
     }
     @Override
@@ -48,7 +50,7 @@ public class SchedulingService implements SchedulingUseCase {
         AppointmentId appointmentId = new AppointmentId(appointment_Id);
         Appointment appointmentToCancel = appointmentRepository.findAppointmentId(appointmentId);
         appointmentToCancel.cancel(command.getCancelInitiator());
-        appointmentRepository.save(appointmentToCancel);
+        saveWithConcurrencyCheck(appointmentToCancel);
         return CancelAppointmentResponse.from(appointmentToCancel);
     }
 
@@ -57,7 +59,7 @@ public class SchedulingService implements SchedulingUseCase {
         AppointmentId appointmentId = new AppointmentId(appointment_id);
         Appointment appointment = appointmentRepository.findAppointmentId(appointmentId);
         appointment.checkIn();
-        appointmentRepository.save(appointment);
+        saveWithConcurrencyCheck(appointment);
         return AppointmentResponse.from(appointment);
     }
     @Override
@@ -65,7 +67,7 @@ public class SchedulingService implements SchedulingUseCase {
         AppointmentId appointmentId = new AppointmentId(appointment_id);
         Appointment appointment = appointmentRepository.findAppointmentId(appointmentId);
         appointment.complete();
-        appointmentRepository.save(appointment);
+        saveWithConcurrencyCheck(appointment);
         return AppointmentResponse.from(appointment);
     }
     @Override
@@ -73,7 +75,7 @@ public class SchedulingService implements SchedulingUseCase {
         AppointmentId appointmentId = new AppointmentId(appointment_id);
         Appointment appointment = appointmentRepository.findAppointmentId(appointmentId);
         appointment.markAsNoShow();
-        appointmentRepository.save(appointment);
+        saveWithConcurrencyCheck(appointment);
         return AppointmentResponse.from(appointment);
     }
 
@@ -88,8 +90,8 @@ public class SchedulingService implements SchedulingUseCase {
                 command.createTimeSlot(),
                 command.getCancelInitiator()
         );
-        appointmentRepository.save(oldAppointment);
-        appointmentRepository.save(newAppointment);
+        saveWithConcurrencyCheck(oldAppointment);
+        saveWithConcurrencyCheck(newAppointment);
         return RescheduleAppointmentResponse.from(newAppointment);
     }
     @Override
@@ -101,8 +103,8 @@ public class SchedulingService implements SchedulingUseCase {
 
         Appointment newAppointment = oldAppointment.rescheduleSystemCancelledAppointment(command.createTimeSlot());
 
-        appointmentRepository.save(oldAppointment);
-        appointmentRepository.save(newAppointment);
+        saveWithConcurrencyCheck(oldAppointment);
+        saveWithConcurrencyCheck(newAppointment);
         return RescheduleAppointmentResponse.from(newAppointment);
     }
 
@@ -113,6 +115,13 @@ public class SchedulingService implements SchedulingUseCase {
         appointmentCalendar.validateBookingRules(requestedTimeSlot, bookedSlots);
     }
 
-
+    private void saveWithConcurrencyCheck(Appointment appointment) {
+        try {
+            appointmentRepository.save(appointment);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ConcurrentOperationException(
+                    "This appointment was just modified by another user. Please refresh and try again.");
+        }
+    }
 
 }
