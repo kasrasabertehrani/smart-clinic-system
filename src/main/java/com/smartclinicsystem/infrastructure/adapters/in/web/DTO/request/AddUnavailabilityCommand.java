@@ -1,4 +1,4 @@
-package com.smartclinicsystem.infrastructure.adapters.in.DTO.request;
+package com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request;
 
 import com.smartclinicsystem.domain.vo.TimePeriod;
 import jakarta.validation.constraints.Future;
