@@ -13,12 +13,15 @@ import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.AddUnavailab
 import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.ChangeScheduleCommand;
 import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.AddUnavailabilityResponse;
 import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.ChangeScheduleResponse;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.function.Function;
 
 import java.util.List;
-
+@Service
+@Transactional
 public class CalendarService implements CalendarUseCase {
     private final AppointmentRepositoryPort appointmentRepository;
     private final AppointmentCalendarRepositoryPort appointmentCalendarRepository;
