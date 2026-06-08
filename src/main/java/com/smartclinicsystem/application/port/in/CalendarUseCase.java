@@ -1,9 +1,9 @@
 package com.smartclinicsystem.application.port.in;
 
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.AddUnavailabilityCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.ChangeScheduleCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.AddUnavailabilityResponse;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.ChangeScheduleResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.AddUnavailabilityCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.ChangeScheduleCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.AddUnavailabilityResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.ChangeScheduleResponse;
 
 public interface CalendarUseCase {
 
