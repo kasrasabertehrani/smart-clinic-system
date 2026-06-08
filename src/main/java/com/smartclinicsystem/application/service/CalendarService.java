@@ -9,10 +9,10 @@ import com.smartclinicsystem.domain.service.AppointmentConflictDomainService;
 import com.smartclinicsystem.domain.vo.DoctorId;
 import com.smartclinicsystem.domain.vo.EffectiveSchedule;
 import com.smartclinicsystem.domain.vo.Unavailability;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.AddUnavailabilityCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.request.ChangeScheduleCommand;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.AddUnavailabilityResponse;
-import com.smartclinicsystem.infrastructure.adapters.in.DTO.response.ChangeScheduleResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.AddUnavailabilityCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request.ChangeScheduleCommand;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.AddUnavailabilityResponse;
+import com.smartclinicsystem.infrastructure.adapters.in.web.DTO.response.ChangeScheduleResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
