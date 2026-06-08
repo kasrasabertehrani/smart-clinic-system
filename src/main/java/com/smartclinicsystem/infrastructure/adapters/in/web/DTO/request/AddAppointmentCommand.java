@@ -6,6 +6,7 @@ import com.smartclinicsystem.domain.vo.DoctorId;
 import com.smartclinicsystem.domain.vo.PatientId;
 import com.smartclinicsystem.domain.vo.SharpTime;
 import com.smartclinicsystem.domain.vo.TimeSlot;
+import com.smartclinicsystem.infrastructure.adapters.in.web.validation.ValidSharpTime;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -29,6 +30,7 @@ public class AddAppointmentCommand {
     private LocalDate appointmentDate;
 
     @NotNull(message = "start time is required")
+    @ValidSharpTime
     private LocalTime startTime;
 
     public PatientId getPatientId() {
