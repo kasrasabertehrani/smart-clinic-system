@@ -3,6 +3,7 @@ package com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request;
 import com.smartclinicsystem.domain.vo.SharpTime;
 import com.smartclinicsystem.domain.vo.WeeklySchedule;
 import com.smartclinicsystem.domain.vo.WorkingShift;
+import com.smartclinicsystem.infrastructure.adapters.in.web.validation.ValidSharpTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotEmpty;
@@ -28,9 +29,11 @@ public class ChangeScheduleCommand {
 
     public static class ShiftDTO {
         @NotNull(message = "Start time is required")
+        @ValidSharpTime
         private LocalTime startTime;
 
         @NotNull(message = "End time is required")
+        @ValidSharpTime
         private LocalTime endTime;
 
         public LocalTime getStartTime() { return startTime; }

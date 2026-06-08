@@ -3,6 +3,7 @@ package com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request;
 import com.smartclinicsystem.domain.Appointment;
 import com.smartclinicsystem.domain.vo.SharpTime;
 import com.smartclinicsystem.domain.vo.TimeSlot;
+import com.smartclinicsystem.infrastructure.adapters.in.web.validation.ValidSharpTime;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,6 +17,7 @@ public class RescheduleSystemCanceledCommand {
     private LocalDate appointmentDate;
 
     @NotNull(message = "start time is required")
+    @ValidSharpTime
     private LocalTime startTime;
 
     @NotNull(message = "Cancel Initiator cannot be null")
