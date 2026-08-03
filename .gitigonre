@@ -1,0 +1,16 @@
+# Ignore Environment Variables (Security!)
+.env
+
+# Ignore compiled Java files and build folders
+target/
+build/
+*.class
+*.jar
+
+# Ignore IDE files (IntelliJ, Eclipse, VS Code)
+.idea/
+*.iml
+.vscode/
+
+# Ignore Mac system files
+.DS_Store

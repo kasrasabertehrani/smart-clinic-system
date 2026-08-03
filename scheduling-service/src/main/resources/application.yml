@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: Smart Clinic System
+
+  datasource:
+    # 1. Changed to scheduling_db to match our isolated microservice architecture
+    # 2. Added Docker environment variable fallbacks
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scheduling_db}
+    username: ${SPRING_DATASOURCE_USERNAME:clinic_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:clinic_password}
+    driver-class-name: org.postgresql.Driver
+
+  rabbitmq:
+    # Added Docker environment variable fallback
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: guest
+    password: guest
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        type.json_format_mapper: org.hibernate.type.format.jackson.JacksonJsonFormatMapper
+        type.jackson.json.format_mapper.register_modules: true
+
+# Pulled out to the root level!
+app:
+  messaging:
+    exchanges:
+      appointment: "appointment.exchange"
+    routing-keys:
+      appointment-booked: "appointment.booked.key"
+      appointment-canceled: "appointment.canceled.key"
+      appointment-expired: "appointment.expired.key"
+    queues:
+      appointment-expired: "appointment.expired.queue"

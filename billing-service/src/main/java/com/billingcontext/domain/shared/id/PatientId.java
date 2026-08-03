@@ -1,0 +1,9 @@
+package com.billingcontext.domain.shared.id;
+
+public record PatientId(String value) {
+    public PatientId {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Patient ID cannot be null or blank");
+        }
+    }
+}

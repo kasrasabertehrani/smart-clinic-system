@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # 1. THE EVENT BUS
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: clinic-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. THE DATABASE SERVER
+  postgres:
+    image: postgres:15-alpine
+    container_name: clinic-postgres
+    environment:
+      POSTGRES_USER: clinic_admin
+      POSTGRES_PASSWORD: clinic_password
+      POSTGRES_DB: postgres 
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinic_admin -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 3. THE SCHEDULING SERVICE
+  scheduling-service:
+    build: ./scheduling-service    
+    image: clinic-scheduling:local
+    container_name: scheduling-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/scheduling_db
+      - SPRING_DATASOURCE_USERNAME=clinic_admin
+      - SPRING_DATASOURCE_PASSWORD=clinic_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # 4. THE BILLING SERVICE
+  billing-service:
+    build: ./billing-service       
+    image: clinic-billing:local
+    container_name: billing-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/billing_db
+      - SPRING_DATASOURCE_USERNAME=clinic_admin
+      - SPRING_DATASOURCE_PASSWORD=clinic_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_PAYMENT_ENDPOINT_KEY=${STRIPE_PAYMENT_WEBHOOK_SECRET}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # 5. THE STRIPE WEBHOOK FORWARDER
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: stripe-cli
+    depends_on:
+      - billing-service
+    command: "listen --api-key ${STRIPE_API_KEY} --forward-to http://billing-service:8081/api/stripe/webhook/payments"
+
+volumes:
+  pgdata:
