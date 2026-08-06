@@ -26,7 +26,7 @@ public interface InvoiceQueryDao extends Repository<InvoiceEntity, String> {
     Optional<InvoiceStatusResponse> getInvoiceStatusById(@Param("invoiceId") String invoiceId);
 
     @Query("SELECT new com.billingcontext.infrastructure.dto.response.InvoiceStatusResponse(" +
-            "i.invoiceId, i.appointmentId, i.doctorId, i.patientId, CAST(i.invoiceStatus AS string)) " +
+            "i.invoiceId, i.doctorId, i.patientId, i.appointmentId, CAST(i.invoiceStatus AS string)) " +
             "FROM InvoiceEntity i WHERE i.invoiceStatus = :status ORDER BY i.createdAt DESC LIMIT 1")
     Optional<InvoiceStatusResponse> getLatestInvoiceByStatus(@Param("status") InvoiceStatus status);
 
