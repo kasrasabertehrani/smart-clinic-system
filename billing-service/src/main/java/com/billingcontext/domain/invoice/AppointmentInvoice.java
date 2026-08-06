@@ -153,7 +153,7 @@ public class AppointmentInvoice {
         if (isExpirationDatePassed(clock) && (isProforma() || isPaymentPending())) {
             this.paymentDurationWindow = null;
             markAsExpired();
-            domainEvents.add(new InvoiceWasExpired(appointmentId));
+            domainEvents.add(new InvoiceWasExpired(appointmentId.value()));
             return Optional.of(this);
         }
 

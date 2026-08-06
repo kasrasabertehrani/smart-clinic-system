@@ -1,7 +1,6 @@
 package com.smartclinicsystem.infrastructure.adapters.in.web.DTO.request;
 
 import com.smartclinicsystem.infrastructure.adapters.in.web.validation.ValidSharpTime;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
