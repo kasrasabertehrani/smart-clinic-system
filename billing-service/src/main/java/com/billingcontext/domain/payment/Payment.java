@@ -91,6 +91,11 @@ public class Payment {
 
     public void finalizePaymentStatus(TransactionResult result) {
         if (result.isSuccessful()) {
+            if (!result.amountPaid().equals(this.amountOwed)) {
+                throw new PaymentException(
+                        "Paid amount and currency must match the expected amount"
+                );
+            }
             markPaymentAsSuccess();
             releaseSuccessEvent(result);
         }
