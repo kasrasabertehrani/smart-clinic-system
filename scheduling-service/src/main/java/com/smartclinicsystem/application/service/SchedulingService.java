@@ -104,9 +104,14 @@ public class SchedulingService implements SchedulingUseCase {
         Appointment newAppointment = oldAppointment.rescheduleSystemCancelledAppointment(command.newTimeSlot());
 
         saveWithConcurrencyCheck(oldAppointment);
+        newAppointment.getDomainEvents().forEach(eventPublisher::publish);
+        newAppointment.clearDomainEvents();
+
         saveWithConcurrencyCheck(newAppointment);
         oldAppointment.getDomainEvents().forEach(eventPublisher::publish);
         oldAppointment.clearDomainEvents();
+
+
         return RescheduleAppointmentResponse.from(newAppointment);
     }
 
