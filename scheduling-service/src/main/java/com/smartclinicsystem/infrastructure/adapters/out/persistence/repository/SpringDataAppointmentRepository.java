@@ -17,7 +17,7 @@ public interface SpringDataAppointmentRepository extends JpaRepository<Appointme
         SELECT a FROM AppointmentEntity a 
         WHERE a.doctorId = :doctorId 
         AND a.appointmentDate >= CURRENT_DATE 
-        AND a.status = 'SCHEDULED'
+        AND a.status IN ('SCHEDULED', 'CHECKED_IN')
     """)
     List<AppointmentEntity> findFutureActiveAppointments(@Param("doctorId") String doctorId);
 }
