@@ -42,6 +42,11 @@ public class InitiateCheckoutService implements InitiateCheckoutUseCase {
     @Override
     public PaymentInitializationResponse initializePayment(InvoiceId invoiceId) {
         AppointmentInvoice invoice = invoiceRepositoryPort.findInvoiceById(invoiceId);
+        if (invoice.isPaymentPending()) {
+            throw new CheckoutAlreadyPendingException(
+                    "Payment is already in progress for this invoice"
+            );
+        }
         invoice.processCheckOut(paymentTimeout, clock);
         PaymentIntentResponse response = gateway.processPayment(invoice.getTotalAmount());
         Payment newLedger = Payment.paymentDeduction(
