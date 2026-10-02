@@ -2,8 +2,7 @@
 
 ![Java](https://img.shields.io/badge/Java-17-blue) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-brightgreen?logo=springboot&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-A clinic-management backend that connects **appointment scheduling** with **invoicing, payments, and refunds** through two independently deployable Spring Boot services.
-
+A clinic-management backend built with a **microservices architecture**, consisting of two independently deployable Spring Boot services: **Scheduling** and **Billing**. The services coordinate appointment scheduling, invoicing, payments, and refunds through **event-driven communication using RabbitMQ**.
 This project was designed to showcase:
 
 - **Domain-Driven Design** with separate Scheduling and Billing bounded contexts.
@@ -134,7 +133,7 @@ After a declined payment, an invoice can remain `PAYMENT_PENDING` while its chec
 
 ## Architecture & Design Patterns
 
-The system combines **Domain-Driven Design (DDD)** and **Hexagonal Architecture (Ports and Adapters)** to organize scheduling and financial rules into separate bounded contexts.
+The system combines **microservices architecture**, **Domain-Driven Design (DDD)**, and **Hexagonal Architecture (Ports and Adapters)**. Scheduling and Billing form separate bounded contexts, each with its own responsibilities and database. They exchange events asynchronously through RabbitMQ, allowing related state changes to propagate with **eventual consistency**.
 
 ### Domain-Driven Design
 
