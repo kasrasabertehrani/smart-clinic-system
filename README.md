@@ -1,329 +1,187 @@
 # Smart Clinic System
 
-A distributed clinic-management backend that coordinates appointment scheduling and financial workflows across two independently deployable Spring Boot services.
+![Java](https://img.shields.io/badge/Java-17-blue) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-brightgreen?logo=springboot&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-The project applies **Domain-Driven Design**, **Hexagonal Architecture**, and **event-driven communication** to model scheduling, invoicing, payment, cancellation, and refund rules without coupling the services through synchronous REST calls.
+A clinic-management backend that connects **appointment scheduling** with **invoicing, payments, and refunds** through two independently deployable Spring Boot services.
 
-> **Project status:** Academic prototype. The system demonstrates the domain model and distributed workflow design; additional reliability and security controls would be required before production use.
+This project was designed to showcase:
 
-## Contents
+- **Domain-Driven Design** with separate Scheduling and Billing bounded contexts.
+- **Hexagonal Architecture** with domain models, application use cases, and infrastructure adapters.
+- **Event-driven communication** between services using RabbitMQ.
+- **Stripe integration** for payment and refund workflows.
+- **Containerized execution** and reproducible API demonstrations with Postman.
 
-- [System Capabilities](#system-capabilities)
-- [Technology Stack](#technology-stack)
-- [Repository Structure](#repository-structure)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Running with Docker Compose](#running-with-docker-compose)
-- [Demo Walkthrough](#demo-walkthrough)
-- [Future Improvements](#future-improvements)
+> Developed as an academic architecture project. This is an API-only backend; the walkthrough uses Postman and Stripe test mode.
 
-## System Capabilities
+## Demo
 
-### Scheduling
+The introduction video follows a complete booking-to-payment workflow: configure a doctor's schedule and pricing profile, book an appointment, retrieve its draft invoice, initiate and confirm a Stripe test payment, and verify the final payment and invoice states.
 
-- Define effective weekly schedules for doctors.
-- Register periods of doctor unavailability.
-- Book one-hour appointments in 15-minute time increments.
-- Prevent bookings outside working hours, during unavailability, or over an existing appointment.
-- Check in patients, complete appointments, and mark no-shows.
-- Cancel appointments with an explicit cancellation initiator.
-- Reschedule active or system-cancelled appointments.
-- Automatically cancel appointments affected by calendar changes.
-- Use optimistic locking to detect concurrent modifications.
+<!-- VIDEO: Replace this comment and the following placeholder with the uploaded GitHub video URL or a link to the hosted introduction video. -->
 
-### Billing
-
-- Maintain a pricing profile for each doctor.
-- Issue a draft proforma invoice when an appointment is booked.
-- Calculate appointment charges from the doctor's hourly rate and appointment duration.
-- Apply time-based pricing policies and discounts.
-- Initiate Stripe PaymentIntents and expose the client secret to the caller.
-- Finalize payments through verified Stripe webhook events.
-- Evaluate refund eligibility and refund amount after cancellation.
-- Initiate Stripe refunds and maintain separate payment/refund ledger entries.
-- Expire overdue invoices and return timed-out checkouts to draft state.
-- Expose query endpoints for invoice and payment status.
+https://github.com/user-attachments/assets/9acea34d-91cd-4c60-959e-8a51ba7f2bc6
 
 
+For the complete walkthrough, see the **[Postman demo guide](docs/postman/README.md)**. It includes six collections, a shared local environment template, request descriptions, and saved response examples.
 
-## Technology Stack
+| Collection | Demonstrates |
+| --- | --- |
+| Booking flow | Doctor schedule and pricing setup, appointment booking, and draft invoice creation |
+| Payment flow | Successful and declined Stripe payments, payment records, and invoice state changes |
+| Cancellation flow | Patient-initiated cancellation and eligible refunds |
+| System cancels appointments | Cancellation after doctor unavailability or working-schedule changes |
+| Reschedule appointment | Replacement appointment creation and the original and replacement invoice states |
+| Expiration flow | Unpaid invoice expiration and appointment cancellation |
 
-| Area | Technology |
-|---|---|
-| Language | Java 17 |
-| Framework | Spring Boot |
-| Web API | Spring Web MVC |
-| Persistence | Spring Data JPA / Hibernate |
-| Databases | PostgreSQL 15 |
+Saved examples can be inspected without running the application.
+
+## Tech Stack
+
+| Area | Technologies |
+| --- | --- |
+| Application | Java 17, Spring Boot |
+| API | Spring Web MVC, Jakarta Bean Validation |
+| Architecture | Domain-Driven Design, Hexagonal Architecture |
+| Persistence | Spring Data JPA, Hibernate, PostgreSQL 15 |
 | Messaging | RabbitMQ |
-| Payment gateway | Stripe Java SDK and Stripe CLI |
-| Validation | Jakarta Bean Validation |
-| Containers | Docker and Docker Compose |
-| Testing | JUnit, Spring Boot Test, H2, and test doubles |
-| Build | Maven / Maven Wrapper |
+| Payments | Stripe Java SDK, Stripe CLI |
+| Testing | JUnit, Spring Boot Test, H2, test doubles |
+| Build | Maven, Maven Wrapper |
+| Containers | Docker, Docker Compose |
+| API demonstrations | Postman collections and saved examples |
 
-## Repository Structure
+## How to Run
 
-```text
-smart-clinic-system/
-├── billing-service/
-│   ├── src/main/java/com/billingcontext/
-│   │   ├── application/       # Use cases and ports
-│   │   ├── domain/            # Aggregates, policies and value objects
-│   │   └── infrastructure/    # REST, RabbitMQ, JPA, Stripe and scheduling adapters
-│   ├── src/test/
-│   ├── Dockerfile
-│   └── pom.xml
-├── scheduling-service/
-│   ├── src/main/java/com/smartclinicsystem/
-│   │   ├── application/       # Commands, use cases and ports
-│   │   ├── domain/            # Appointment and calendar domain model
-│   │   └── infrastructure/    # REST, RabbitMQ and JPA adapters
-│   ├── src/test/
-│   ├── Dockerfile
-│   └── pom.xml
-├── postgres-init/
-│   └── init.sql               # Creates one database per bounded context
-├── docker-compose.yml
-└── README.md
-```
+### Docker Compose
 
-## Getting Started
+Install Git and Docker with Docker Compose v2. Use a Stripe test account for payment and refund demonstrations.
 
-### Prerequisites
+1. Clone the repository:
 
-For the containerized setup:
+   ```bash
+   git clone https://github.com/kasrasabertehrani/smart-clinic-system.git
+   cd smart-clinic-system
+   ```
 
-- Docker Engine or Docker Desktop
-- Docker Compose v2
-- A Stripe account with a test-mode secret key
+2. Create a `.env` file in the project root:
 
-For local development without Docker:
+   ```dotenv
+   STRIPE_API_KEY=sk_test_replace_with_your_test_key
+   STRIPE_PAYMENT_WEBHOOK_SECRET=whsec_replace_with_your_webhook_secret
+   ```
 
-- Java 17
-- Maven 3.9+ or the included Maven Wrapper
-- PostgreSQL
-- RabbitMQ
-- Stripe CLI for webhook forwarding
+   Use test credentials and keep `.env` out of source control. Billing's webhook signing secret must match the active Stripe CLI listener. When the listener supplies its secret, update `.env` and recreate Billing if necessary to apply the value.
 
-## Configuration
+3. Build and start the services:
 
-Create a `.env` file in the project root:
+   ```bash
+   docker compose up --build -d
+   ```
 
-```dotenv
-STRIPE_API_KEY=sk_test_replace_with_your_test_key
-STRIPE_PAYMENT_WEBHOOK_SECRET=whsec_replace_with_your_webhook_secret
-```
+4. Check service status and logs:
 
-Use only Stripe **test-mode** credentials for local development and demonstrations.
+   ```bash
+   docker compose ps
+   docker compose logs -f scheduling-service billing-service rabbitmq stripe-cli
+   ```
 
-Do not commit `.env` files or real credentials to source control. A repository intended for publication should contain an `.env.example` file with placeholders instead.
+### Local Services
 
-### Payment checkout window
+| Component | Address |
+| --- | --- |
+| Scheduling API | `http://localhost:8080` |
+| Billing API | `http://localhost:8081` |
+| RabbitMQ Management UI | `http://localhost:15672` |
+| RabbitMQ AMQP | `localhost:5672` |
+| PostgreSQL | `localhost:5432` |
 
-The current Billing configuration uses a short demonstration timeout:
+RabbitMQ uses `guest` / `guest` for the local setup. PostgreSQL initializes separate `scheduling_db` and `billing_db` databases.
 
-```properties
-clinic.checkout.payment-timeout=20s
-```
-
-It can be overridden in `docker-compose.yml` under `billing-service.environment`:
-
-```yaml
-- CLINIC_CHECKOUT_PAYMENT_TIMEOUT=15s
-```
-
-A production-like configuration could use:
-
-```yaml
-- CLINIC_CHECKOUT_PAYMENT_TIMEOUT=2h
-```
-
-## Running with Docker Compose
-
-From the project root:
-
-```bash
-docker compose up --build
-```
-
-Run in detached mode:
-
-```bash
-docker compose up --build -d
-```
-
-Check service status:
-
-```bash
-docker compose ps
-```
-
-Follow logs:
-
-```bash
-docker compose logs -f scheduling-service billing-service rabbitmq stripe-cli
-```
-
-Stop the system:
+To stop the system:
 
 ```bash
 docker compose down
 ```
 
-Remove containers and database volumes for a clean reset:
+To reset it completely, use `docker compose down -v`. This also deletes the local database volumes.
 
-```bash
-docker compose down -v
+## How to Try the Workflows
+
+1. Import the six collections and environment JSON from [`docs/postman/`](docs/postman/) into Postman.
+2. Select the **Smart Clinic System - local** environment and verify the service URLs.
+3. Run **Booking flow** to configure a doctor and create an appointment with its draft invoice.
+4. Continue with **Payment flow** to initiate payment, confirm the generated PaymentIntent through the documented Stripe CLI command, and query the result.
+5. Prepare a fresh appointment for each cancellation, rescheduling, or expiration scenario. Complete payment first when demonstrating a paid scenario.
+
+Run requests manually in the order described by each collection. Update fixed dates to valid future dates, and confirm that “latest” queries select the appointment or invoice you intend to use. Keep the selected identifiers unchanged while checking the outcome.
+
+Stripe CLI must use the same test account or sandbox as Billing. Keep webhook forwarding active so Billing receives the results of the actual PaymentIntent created by your request.
+
+Service events, webhooks, and background jobs are asynchronous. If a query still shows an intermediate state, wait briefly and repeat it.
+
+### Payment Window
+
+Billing uses `clinic.checkout.payment-timeout` to configure the checkout window. The recorded Postman examples use one minute. To reproduce that setting, add this under `billing-service.environment` in `docker-compose.yml`:
+
+```yaml
+- CLINIC_CHECKOUT_PAYMENT_TIMEOUT=60s
 ```
 
-> Removing the volume permanently deletes the local Scheduling and Billing databases.
+After a declined payment, an invoice can remain `PAYMENT_PENDING` while its checkout window is active. Once the window expires and background processing runs, it returns to `DRAFT`. The effective timeout depends on application configuration and environment overrides.
 
-### Exposed services
+“Draft invoice” and “proforma invoice” refer to the same stage in this project, represented by `invoiceStatus: DRAFT`.
 
-| Component | Address |
-|---|---|
-| Scheduling API | `http://localhost:8080` |
-| Billing API | `http://localhost:8081` |
-| RabbitMQ AMQP | `localhost:5672` |
-| RabbitMQ Management UI | `http://localhost:15672` |
-| PostgreSQL | `localhost:5432` |
+## Architecture & Design Patterns
 
-RabbitMQ's default local credentials are `guest` / `guest`.
+The system combines **Domain-Driven Design (DDD)** and **Hexagonal Architecture (Ports and Adapters)** to organize scheduling and financial rules into separate bounded contexts.
 
-The PostgreSQL container initializes two separate databases:
+### Domain-Driven Design
 
-- `scheduling_db`
-- `billing_db`
+**Scheduling** owns doctor calendars and the appointment lifecycle. Its domain rules cover working hours, unavailability, overlapping bookings, cancellation, and rescheduling. Appointments last one hour and can begin at 15-minute intervals. The service also supports check-in, completion, and no-show handling.
 
-## Demo Walkthrough
+**Billing** owns pricing profiles, invoices, and payment/refund records. It calculates charges, applies pricing policies, manages checkout windows, and evaluates cancellation and refund outcomes.
 
-The following sequence demonstrates the main cross-service workflow. Use future dates that fall within the doctor's configured schedule.
+Aggregates, value objects, and domain policies express these rules. Each service maintains its own database, allowing Scheduling and Billing to evolve around their respective responsibilities.
 
-### 1. Create a doctor's pricing profile
+### Hexagonal Architecture
 
-```bash
-curl -X POST http://localhost:8081/api/profile/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "doctorId": "doctor-001",
-    "currency": "EUR",
-    "hourlyRate": 100.00
-  }'
-```
+Both services organize their implementation into three areas:
 
-### 2. Configure the doctor's weekly schedule
+| Layer | Responsibility |
+| --- | --- |
+| `domain` | Business models, invariants, policies, and domain events |
+| `application` | Use cases, workflow coordination, and ports |
+| `infrastructure` | REST endpoints, persistence, messaging, and external-service adapters |
 
-```bash
-curl -X POST http://localhost:8080/api/calendars/doctor-001/schedules \
-  -H "Content-Type: application/json" \
-  -d '{
-    "validFrom": "2030-01-01",
-    "shifts": {
-      "MONDAY": [
-        { "startTime": "09:00", "endTime": "17:00" }
-      ],
-      "TUESDAY": [
-        { "startTime": "09:00", "endTime": "17:00" }
-      ]
-    }
-  }'
-```
+This structure separates business decisions from the mechanisms used to receive requests, persist data, exchange messages, and communicate with Stripe.
 
-### 3. Book an appointment
+### Event-Driven Workflows
 
-Choose a future Monday or Tuesday on or after the schedule's `validFrom` date.
+Scheduling and Billing coordinate through RabbitMQ rather than synchronous REST calls between the services. Booking an appointment publishes an event that Billing consumes to create its invoice. Cancellation events trigger the corresponding billing workflow, while Stripe webhooks report payment and refund outcomes.
 
-```bash
-curl -X POST http://localhost:8080/api/appointments \
-  -H "Content-Type: application/json" \
-  -d '{
-    "doctorId": "doctor-001",
-    "patientId": "patient-001",
-    "appointmentDate": "2030-01-07",
-    "startTime": "10:00"
-  }'
-```
+Each service commits its own changes, so related states become consistent asynchronously. The Postman scenarios make these transitions observable through status queries.
 
-Scheduling publishes `AppointmentWasBooked`. Billing consumes the event and creates a draft invoice asynchronously.
+## Project Structure
 
-### 4. Find the generated invoice
+| Path | Contents |
+| --- | --- |
+| [`scheduling-service/`](scheduling-service/) | Appointment and calendar domain, application use cases, and adapters |
+| [`billing-service/`](billing-service/) | Pricing, invoices, payments, refunds, and adapters |
+| [`docs/postman/`](docs/postman/) | Demo guide, six collections, and local environment template |
+| [`postgres-init/`](postgres-init/) | Initialization script for the two service databases |
+| [`docker-compose.yml`](docker-compose.yml) | Local service and infrastructure configuration |
 
-```bash
-curl "http://localhost:8081/api/queries/invoices/latest?status=DRAFT"
-```
+For a more detailed explanation of the system’s architecture and design decisions, see [report_SAP.pdf](report_SAP.pdf) in this repository.
 
-Copy the returned `invoiceId`.
+## Project Scope & Next Steps
 
-### 5. Apply pricing rules
+This academic prototype explores bounded-context autonomy, business-rule modeling, and eventual consistency across a financial workflow. The included tests and saved API examples support development and demonstration; saved examples are snapshots of previous runs.
 
-```bash
-curl -X POST http://localhost:8081/api/payments/{invoiceId}/update/proforma
-```
+Further work before production use includes:
 
-### 6. Initiate Stripe payment
-
-```bash
-curl -X POST http://localhost:8081/api/payments/{invoiceId}/initiate/payment
-```
-
-The response contains:
-
-- the invoice ID;
-- the payment ledger ID;
-- the amount in the currency's smallest unit;
-- the payment window expiration;
-- the Stripe `clientSecret`.
-
-A frontend can use the client secret with Stripe.js. During backend-only demonstrations, Stripe CLI test events can be forwarded to:
-
-```text
-http://billing-service:8081/api/stripe/webhook/payments
-```
-
-The webhook signing secret configured in Billing must match the secret generated for the active Stripe CLI listener.
-
-### 7. Query invoice or payment state
-
-```bash
-curl http://localhost:8081/api/queries/invoices/{invoiceId}/status
-```
-
-```bash
-curl http://localhost:8081/api/queries/payments/{paymentId}/status
-```
-
-### 8. Demonstrate cancellation
-
-```bash
-curl -X POST http://localhost:8080/api/appointments/{appointmentId}/cancel \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cancelInitiator": "PATIENT"
-  }'
-```
-
-Billing consumes the cancellation event and either cancels the invoice or starts the refund process according to the invoice state and refund policies.
-
-
-
-
-## Future Improvements
-
-The most valuable next steps are:
-
-1. Add a transactional outbox to both services.
-2. Make all message consumers idempotent.
-3. Introduce retry policies and dead-letter queues.
-4. Add contract and end-to-end integration tests with RabbitMQ, PostgreSQL, and Stripe test mode.
-5. Define correlation IDs and distributed tracing across workflows.
-6. Replace `ddl-auto=update` with Flyway or Liquibase migrations.
-7. Add API authentication and role-based authorization.
-8. Add reconciliation jobs that compare Billing state with Stripe.
-9. Document event schemas and introduce explicit event versions.
-10. Add OpenAPI documentation and a reusable Postman demonstration collection.
-
-## Academic Purpose
-
-The project was developed to explore how Domain-Driven Design and event-driven microservices can be applied to a domain with strict scheduling invariants and multi-step financial workflows. The main objective is not to claim that microservices are always preferable, but to demonstrate the benefits and costs of bounded-context autonomy, asynchronous communication, and eventual consistency.
-"# smart-clinic-system" 
+- Reliable event delivery through transactional outboxes, consumer idempotency, retries, and dead-letter queues.
+- API authentication and role-based authorization.
+- Database migrations and versioned event contracts.
+- End-to-end integration tests, distributed tracing, and Stripe reconciliation.
+- OpenAPI documentation for both services.
