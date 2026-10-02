@@ -1,0 +1,170 @@
+{
+  "info": {
+    "_postman_id": "3b27a98c-c809-48e9-8fa4-c24e2ee03cb2",
+    "name": "Expiration flow",
+    "description": "Demonstrates automatic expiration of an unpaid appointment.\n\n**Business rule**  \nWhen an appointment passes its expiry cutoff without payment, the system cancels the appointment and marks its invoice as `EXPIRED`.\n\n**Prerequisites**\n\n- The Scheduling and Billing services and their required infrastructure are running.\n    \n- Background expiration processing is enabled.\n    \n- An appointment and its associated invoice exist, and the appointment remains unpaid.\n    \n- The selected environment contains `scheduling_url` and `billing_url`.\n    \n\n**Execusion**\n\n1. Create an appointment through the Booking flow and leave it unpaid. Keep its `appointmentId` in the selected environment.\n    \n2. Run **Get the invoice result** to verify the invoice belongs to that appointment.\n    \n3. Allow the appointment’s expiry cutoff to pass and background processing to run.\n    \n4. Run **Get the invoice result** and **Get the last appointment** again. Verify that the invoice is `EXPIRED` and the appointment is `CANCELLED`.\n    \n\nKeep `appointmentId` unchanged throughout this scenario so both queries refer to the same appointment.\n\n**Expected outcome**\n\n- Invoice: `EXPIRED`.\n    \n- Appointment: `CANCELLED`.\n    \n\nBackground processing and communication between services can introduce a delay after the cutoff.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Get the invoice result",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\n// Save the new appointment ID to your environment\r\npm.environment.set(\"appointmentId\", jsonData.appointmentId); "
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice associated with the environment variable `appointmentId`.\n\nRun this request for the unpaid appointment prepared through the Booking flow. After its expiry cutoff has passed and background processing has completed, the expected invoice status is `EXPIRED`.\n\nCompare the returned `appointmentId` with the appointment query to verify that both responses describe the same booking."
+      },
+      "response": [
+        {
+          "name": "expired invoice",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 18:01:04 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"ccc458cb-b658-42d3-ad91-b2ee843b9d32\",\n  \"doctorId\": \"doc-22b53b09-9f11-4dd5-a0a6-aed19ed23ed1\",\n  \"patientId\": \"pat-080587f5-7918-4fc1-bed8-604e6fc9d907\",\n  \"appointmentId\": \"99f819d2-a16f-43ec-9124-2ec0670bfcd6\",\n  \"invoiceStatus\": \"EXPIRED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get the last appointment",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{scheduling_url}}/api/queries/appointments/{{appointmentId}}/latest",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "appointments",
+            "{{appointmentId}}",
+            "latest"
+          ]
+        },
+        "description": "Retrieves the appointment associated with the invoice in this expiration scenario.\n\n**Prerequisites**\n\n- `appointmentId` identifies the unpaid appointment being observed.\n    \n- The appointment has passed its expiry cutoff and background expiration processing has run.\n    \n\n**Expected outcome**  \nThe response contains `appointmentStatus: CANCELLED`. The corresponding invoice query returns `invoiceStatus: EXPIRED`.\n\nVerify that both responses contain the same `appointmentId`."
+      },
+      "response": [
+        {
+          "name": "cancelled appointment",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{scheduling_url}}/api/queries/appointments/{{appointmentId}}/latest",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "appointments",
+                "{{appointmentId}}",
+                "latest"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 18:01:31 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"99f819d2-a16f-43ec-9124-2ec0670bfcd6\",\n  \"doctorId\": \"doc-22b53b09-9f11-4dd5-a0a6-aed19ed23ed1\",\n  \"patientId\": \"pat-080587f5-7918-4fc1-bed8-604e6fc9d907\",\n  \"appointmentDate\": \"2026-10-01\",\n  \"startTime\": \"20:00:00\",\n  \"endTime\": \"21:00:00\",\n  \"appointmentStatus\": \"CANCELLED\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "appointmentIdExpired",
+      "value": ""
+    }
+  ]
+}

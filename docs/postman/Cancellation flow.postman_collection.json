@@ -1,0 +1,416 @@
+{
+  "info": {
+    "_postman_id": "ebf2104b-0006-4795-b4f2-51ea26b50c1a",
+    "name": "Cancellation flow",
+    "description": "Demonstrates a patient-initiated appointment cancellation and its effect on billing.\n\n**Cancellation rules**\n\n- **Paid appointment, more than 24 hours before its start:** cancellation triggers a refund.\n    \n- **Paid appointment, 24 hours or less before its start:** the appointment is cancelled without a refund.\n    \n- **Unpaid appointment:** the appointment is cancelled without a refund.\n    \n\n**Prerequisites**\n\n- The Scheduling and Billing services and their required infrastructure are running.\n    \n- The selected environment contains `scheduling_url` and `billing_url`.\n    \n- An active appointment eligible for cancellation exists.\n    \n- For a refund scenario, complete a successful payment and use an appointment scheduled more than 24 hours ahead. Keep Stripe webhook forwarding active.\n    \n\n**Request order**\n\n1. **Get the latest active appointment** — retrieve the appointment and save its ID.\n    \n2. StartFragmentRetrieves the invoice status after patient-initiated cancellation.Uses the same `appointmentId` as **Cancel appointment**. No request body is required.The saved examples demonstrate:Billing and refund processing are asynchronous. If the previous state is still shown, wait briefly and query again.Keep the original `appointmentId` throughout the scenario. Do not rerun **Get the latest active appointment** after cancellation, because it may select another appointment.EndFragment  \n    \n    - `CANCELLED`: an invoice cancelled without a refund.\n        \n    - `REFUNDED`: an invoice after the eligible payment was refunded.\n        \n    - **Cancel appointment** — request cancellation with `cancelInitiator` set to `PATIENT`.\n        \n\nCancellation and billing updates are processed across services. Allow time for event and webhook processing before checking the final invoice state.\n\n**Terminology**  \nIn this project, “draft invoice” and “proforma invoice” refer to the same invoice stage. The API represents this stage with `invoiceStatus: DRAFT`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Get the latest active appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\npm.environment.set(\"appointmentId\", jsonData.appointmentId); \r\n"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{scheduling_url}}/api/queries/appointments/latest",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "appointments",
+            "latest"
+          ]
+        },
+        "description": "Retrieves the latest appointment from the Scheduling service.\n\n**Script**  \nThe post-response script saves the returned `appointmentId` in the selected environment. Subsequent requests use this ID to cancel the appointment and query its invoice.\n\nBefore continuing, verify that the returned appointment is the one intended for this cancellation scenario and is eligible for cancellation.\n\n**Next step:** Cancel appointment."
+      },
+      "response": [
+        {
+          "name": "latest appointment on the list",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{scheduling_url}}/api/queries/appointments/latest",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "appointments",
+                "latest"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:07:43 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"434fdebc-7504-4ebe-95a5-2cfde76f630d\",\n  \"doctorId\": \"doc-573ca629-849f-4f23-a5fe-342828ba0c18\",\n  \"patientId\": \"pat-16c9f31d-5b29-44ec-9e41-001e58c71be8\",\n  \"appointmentDate\": \"2026-10-06\",\n  \"startTime\": \"13:00:00\",\n  \"endTime\": \"14:00:00\",\n  \"appointmentStatus\": \"SCHEDULED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get invoice status before cancellation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the selected appointment’s invoice status before cancellation.\n\nRun this after **Get the latest active appointment**, which saves `appointmentId` in the selected environment.\n\nNo request body is required.\n\nThe saved examples show a paid invoice (`PAID`) and an unpaid draft invoice (`DRAFT`). Check this state before cancelling to establish the starting point for the scenario."
+      },
+      "response": [
+        {
+          "name": "paid invoice",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:24:51 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"d12533d0-b809-426f-901c-9e546f4b6280\",\n  \"doctorId\": \"doc-0b7cd27b-1c08-4862-9cd6-fa9b5ce4aba8\",\n  \"patientId\": \"pat-9cc116c1-fbfa-4e39-b777-41ff4f2d2b1a\",\n  \"appointmentId\": \"3653aefc-9d75-41de-a994-b08cb5f6c1e8\",\n  \"invoiceStatus\": \"PAID\"\n}"
+        },
+        {
+          "name": "Unpaid invoice",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:32:31 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"0471a191-5bd4-4213-bcbb-ddc45a5bd78c\",\n  \"doctorId\": \"doc-6299f54b-be02-401e-8c84-577c0775a240\",\n  \"patientId\": \"pat-d1391c97-c70a-4f3e-a393-a294d7366cce\",\n  \"appointmentId\": \"068055eb-876e-4c92-8bc3-2c40c2c4a50f\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Cancel appointment",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"cancelInitiator\": \"PATIENT\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{scheduling_url}}/api/appointments/{{appointmentId}}/cancel",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "{{appointmentId}}",
+            "cancel"
+          ]
+        },
+        "description": "Cancels the selected appointment at the patient’s request.\n\nRun this after **Get the latest active appointment**, using the same Postman environment.\n\n**Prerequisites**\n\n- `appointmentId` identifies the appointment you intend to cancel.\n    \n- The appointment is eligible for cancellation.\n    \n\n**Request body**\n\n```\n{\n  \"cancelInitiator\": \"PATIENT\"\n}\n\n ```\n\n**Expected outcome**  \nThe appointment is cancelled. The billing outcome depends on its payment state and the time remaining before its start:\n\n- Paid, with more than 24 hours remaining: cancellation triggers a refund.\n    \n- Paid, with 24 hours or less remaining: cancellation without a refund.\n    \n- Unpaid: cancellation without a refund.\n    \n\nA successful cancellation response does not by itself confirm that a refund has completed. Billing and Stripe process the refund asynchronously.\n\n**Next step:** Get invoice status."
+      },
+      "response": [
+        {
+          "name": "Canceled appointment",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"cancelInitiator\": \"PATIENT\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/appointments/{{appointmentId}}/cancel",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "cancel"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:20:49 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"434fdebc-7504-4ebe-95a5-2cfde76f630d\",\n  \"doctorId\": \"doc-573ca629-849f-4f23-a5fe-342828ba0c18\",\n  \"patientId\": \"pat-16c9f31d-5b29-44ec-9e41-001e58c71be8\",\n  \"appointmentDate\": \"2026-10-06\",\n  \"startTime\": \"13:00:00\",\n  \"endTime\": \"14:00:00\",\n  \"appointmentStatus\": \"CANCELLED\",\n  \"cancelInitiator\": \"PATIENT\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get invoice status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice status after patient-initiated cancellation.\n\nUses the same `appointmentId` as **Cancel appointment**. No request body is required.\n\nThe saved examples demonstrate:\n\n- `CANCELLED`: an invoice cancelled without a refund.\n    \n- `REFUNDED`: an invoice after the eligible payment was refunded.\n    \n\nBilling and refund processing are asynchronous. If the previous state is still shown, wait briefly and query again.\n\nKeep the original `appointmentId` throughout the scenario. Do not rerun **Get the latest active appointment** after cancellation, because it may select another appointment."
+      },
+      "response": [
+        {
+          "name": "cancelled invoice",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:21:18 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"9bdb3202-7cc4-4cbb-8a78-d2c823e47a48\",\n  \"doctorId\": \"doc-573ca629-849f-4f23-a5fe-342828ba0c18\",\n  \"patientId\": \"pat-16c9f31d-5b29-44ec-9e41-001e58c71be8\",\n  \"appointmentId\": \"434fdebc-7504-4ebe-95a5-2cfde76f630d\",\n  \"invoiceStatus\": \"CANCELLED\"\n}"
+        },
+        {
+          "name": "Refunded invoice",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 15:25:41 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"d12533d0-b809-426f-901c-9e546f4b6280\",\n  \"doctorId\": \"doc-0b7cd27b-1c08-4862-9cd6-fa9b5ce4aba8\",\n  \"patientId\": \"pat-9cc116c1-fbfa-4e39-b777-41ff4f2d2b1a\",\n  \"appointmentId\": \"3653aefc-9d75-41de-a994-b08cb5f6c1e8\",\n  \"invoiceStatus\": \"REFUNDED\"\n}"
+        }
+      ]
+    }
+  ]
+}

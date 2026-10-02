@@ -1,0 +1,297 @@
+{
+  "info": {
+    "_postman_id": "af79cff7-819c-4605-b2ac-bb775ab962e5",
+    "name": "System cancels appointments",
+    "description": "Demonstrates system-initiated appointment cancellation when a doctor’s availability changes.\n\n**Scenarios**\n\n- **Add unavailability:** introduce an unavailable period that overlaps an existing appointment.\n    \n- **Change schedule:** update the doctor’s working hours so an existing appointment falls outside the new schedule.\n    \n\n**Prerequisites**\n\n- The Scheduling and Billing services and their required infrastructure are running.\n    \n- The selected environment contains `scheduling_url` and `billing_url`.\n    \n- An active appointment exists for the doctor whose availability will change.\n    \n- To demonstrate the billing outcome for a paid appointment, complete its payment first and keep Stripe webhook forwarding active.\n    \n\n**Execution order**\n\n1. Run **Get the latest active appointment** to save its `appointmentId` and `doctorId`.\n    \n2. Run either **Add unavailability** or **Set a working schedule** for that doctor.\n    \n3. Inspect the cancellation outcome and run **Get invoice status** to observe its effect on billing.\n    \n\nUse a separate active appointment for each scenario.\n\nFor unavailability, choose a period overlapping the appointment. For a schedule change, choose a valid effective date on or before the appointment date and working hours that exclude the appointment.\n\nAllow time for event and webhook processing before checking the final billing outcome.\n\n**Terminology**  \nIn this project, “draft invoice” and “proforma invoice” refer to the same invoice stage. The API represents this stage with `invoiceStatus: DRAFT`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Unavailability",
+      "item": [
+        {
+          "name": "Add unavailability",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"startTime\": \"2026-10-05T10:00:00\",\r\n  \"endTime\": \"2026-10-07T12:00:00\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/unavailabilities",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "calendars",
+                "{{doctorId}}",
+                "unavailabilities"
+              ]
+            },
+            "description": "Adds an unavailable period to the selected doctor’s calendar.\n\nRun **Get the latest active appointment** first to populate `doctorId` and `appointmentId`.\n\n**Request body**\n\n- `startTime`: the beginning of the unavailable period.\n    \n- `endTime`: the end of the unavailable period.\n    \n\nFor this scenario, choose a period that overlaps the selected appointment.\n\n**Expected outcome**  \nThe unavailable period is added, triggering system cancellation of affected appointments. Billing processes the resulting cancellation events asynchronously.\n\n**Next step:** Inspect the affected appointment and query **Get invoice status**, keeping the original `appointmentId`."
+          },
+          "response": [
+            {
+              "name": "Unavailability added — affected appointment cancelled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"startTime\": \"2026-10-05T10:00:00\",\r\n  \"endTime\": \"2026-10-07T12:00:00\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/unavailabilities",
+                  "host": [
+                    "{{scheduling_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "calendars",
+                    "{{doctorId}}",
+                    "unavailabilities"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 16:12:25 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"unavailabilityStart\": \"2026-10-05T10:00:00\",\n  \"unavailabilityEnd\": \"2026-10-07T12:00:00\",\n  \"canceledAppointments\": [\n    {\n      \"appointmentId\": \"508b5f31-95ce-495d-bc43-c6e13c886ba8\",\n      \"doctorId\": \"doc-775c52fe-c7fe-40f2-9174-f4356c771faa\",\n      \"patientId\": \"pat-a1303b37-c293-48e1-b12e-9ae1d07fd4ea\",\n      \"appointmentDate\": \"2026-10-06\",\n      \"startTime\": \"13:00:00\",\n      \"endTime\": \"14:00:00\",\n      \"appointmentStatus\": \"CANCELLED\",\n      \"cancelInitiator\": \"SYSTEM_AUTOMATION\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Change schedule",
+      "item": [
+        {
+          "name": "Set a working schedule",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"validFrom\": \"2026-10-15\",\r\n  \"shifts\": {\r\n    \"MONDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:30:00\"}],\r\n    \"TUESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"WEDNESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"10:00:00\"}],\r\n    \"THURSDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"}],\r\n    \"FRIDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"},{\"startTime\": \"15:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"SATURDAY\": [],\r\n    \"SUNDAY\": []\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/schedules",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "calendars",
+                "{{doctorId}}",
+                "schedules"
+              ]
+            },
+            "description": "Updates the selected doctor’s working schedule from the specified effective date.\n\nRun **Get the latest active appointment** first to populate `doctorId` and `appointmentId`.\n\n**Request body**\n\n- `validFrom`: the date the new schedule takes effect.\n    \n- `shifts`: the doctor’s working intervals for each day of the week.\n    \n\nFor this scenario, set the effective date on or before the selected appointment date and change that weekday’s hours so the appointment falls outside the working intervals.\n\n**Expected outcome**  \nThe new schedule triggers system cancellation of appointments that no longer fit the doctor’s working hours. Billing processes the resulting cancellation events asynchronously.\n\n**Next step:** Query **Get invoice status** using the original `appointmentId`."
+          },
+          "response": [
+            {
+              "name": "Schedule changed — affected appointment cancelled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"validFrom\": \"2026-10-15\",\r\n  \"shifts\": {\r\n    \"MONDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:30:00\"}],\r\n    \"TUESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"WEDNESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"10:00:00\"}],\r\n    \"THURSDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"}],\r\n    \"FRIDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"},{\"startTime\": \"15:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"SATURDAY\": [],\r\n    \"SUNDAY\": []\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/schedules",
+                  "host": [
+                    "{{scheduling_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "calendars",
+                    "{{doctorId}}",
+                    "schedules"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 16:25:15 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"validFrom\": \"2026-10-15\",\n  \"newWeeklySchedule\": {\n    \"MONDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"17:30:00\"\n      }\n    ],\n    \"TUESDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"17:00:00\"\n      }\n    ],\n    \"WEDNESDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"10:00:00\"\n      }\n    ],\n    \"THURSDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"12:00:00\"\n      }\n    ],\n    \"FRIDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"12:00:00\"\n      },\n      {\n        \"startTime\": \"15:00:00\",\n        \"endTime\": \"17:00:00\"\n      }\n    ],\n    \"SATURDAY\": [],\n    \"SUNDAY\": []\n  },\n  \"canceledAppointments\": [\n    {\n      \"appointmentId\": \"6218d9b5-e3da-40b9-afad-df779fcf5f86\",\n      \"doctorId\": \"doc-975b5a97-e253-4c10-958a-c8a32e3e9b86\",\n      \"patientId\": \"pat-b033fcad-dfbd-4016-91bf-4db28a76329b\",\n      \"appointmentDate\": \"2026-10-15\",\n      \"startTime\": \"13:00:00\",\n      \"endTime\": \"14:00:00\",\n      \"appointmentStatus\": \"CANCELLED\",\n      \"cancelInitiator\": \"SYSTEM_AUTOMATION\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Get the latest active appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\npm.environment.set(\"doctorId\", jsonData.doctorId);\r\npm.environment.set(\"appointmentId\", jsonData.appointmentId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{scheduling_url}}/api/queries/appointments/latest",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "appointments",
+            "latest"
+          ]
+        },
+        "description": "Retrieves the latest active appointment and prepares the identifiers used in the system-cancellation scenario.\n\nRun this request before **Add unavailability** or **Set a working schedule**.\n\n**Prerequisites**\n\n- The Scheduling service is running.\n    \n- `scheduling_url` points to the Scheduling service.\n    \n- An active appointment exists for the scenario.\n    \n\n**Request**  \nNo request body is required.\n\n**Script**  \nThe post-response script saves these values in the selected environment:\n\n- `doctorId`: the doctor whose availability will change.\n    \n- `appointmentId`: the appointment whose billing outcome will be checked.\n    \n\n**Expected outcome**  \nThe response identifies the appointment and shows its date, time, and current status. Verify that it is the appointment you intend to affect.\n\n**Next step**  \nRun either **Add unavailability** with an overlapping period or **Set a working schedule** with hours that exclude the appointment.\n\nKeep the saved identifiers unchanged when querying the invoice afterward. Do not rerun this request after cancellation, because it may select another appointment."
+      },
+      "response": []
+    },
+    {
+      "name": "Get invoice status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice status for the appointment affected by the doctor’s availability change.\n\n**Prerequisites**\n\n- `appointmentId` still identifies the cancelled appointment.\n    \n- The unavailability or schedule-change request has completed.\n    \n\n**Request**  \nUses `appointmentId` in the URL. No request body is required.\n\n**Expected outcome**  \nThe response shows the invoice’s current state after Billing processes the system-initiated cancellation.\n\nBilling updates and any refund processing are asynchronous. If the response still shows the previous state, wait briefly and query again."
+      },
+      "response": [
+        {
+          "name": "System cancellation — invoice cancelled",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 16:15:30 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"80ab5465-5e31-4ae9-a45d-97b366ec7989\",\n  \"doctorId\": \"doc-775c52fe-c7fe-40f2-9174-f4356c771faa\",\n  \"patientId\": \"pat-a1303b37-c293-48e1-b12e-9ae1d07fd4ea\",\n  \"appointmentId\": \"508b5f31-95ce-495d-bc43-c6e13c886ba8\",\n  \"invoiceStatus\": \"CANCELLED\"\n}"
+        }
+      ]
+    }
+  ]
+}

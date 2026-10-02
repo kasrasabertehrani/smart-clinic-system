@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "978f6455-7871-4b05-829e-53445f4df6db",
+    "name": "Payment flow",
+    "description": "Demonstrates the payment workflow for an appointment invoice.\n\n**Prerequisites**\n\n- Complete the Booking flow to create an appointment and its proforma invoice.\n    \n- Keep the same Postman environment selected.\n    \n- Run the Billing service and its required infrastructure, with Stripe test-mode configuration.\n    \n\n**Request order**\n\n1. **Get the latest proforma** — retrieve the latest invoice and save its ID.\n    \n2. **Update proforma** — update the selected proforma before checkout.\n    \n3. **Initiate payment** — start payment and save the returned payment identifiers.\n    \n4. **Confirm the test payment manually using the Stripe CLI**\n    \n5. **Get the ledger** — inspect the payment record.\n    \n6. **Get the invoice result** — inspect the invoice’s resulting status.\n    \n\nInitiating payment does not itself demonstrate a successful payment. The final results depend on the payment outcome being processed by the backend.\n\n**Terminology**  \nIn this project, “draft invoice” and “proforma invoice” refer to the same invoice stage. The API represents this stage with `invoiceStatus: DRAFT`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Get the latest proforma",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Parse the JSON response\r\nvar jsonData = pm.response.json();\r\n\r\n// Save the new Invoice ID to environment\r\npm.environment.set(\"invoiceId\", jsonData.invoiceId); "
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/latest",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "latest"
+          ]
+        },
+        "description": "Retrieves the latest invoice from the Billing service.\n\nRun this after completing the Booking flow. Check that the returned invoice belongs to the appointment you intend to pay for, particularly if other bookings have been created.\n\n**Script**  \nThe post-response script saves the returned `invoiceId` in the selected environment. Subsequent payment requests use this value.\n\n**Expected outcome**  \nThe response contains the intended appointment’s proforma invoice."
+      },
+      "response": [
+        {
+          "name": "Proforma retrieved",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/latest",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "latest"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:01:23 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update proforma",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/payments/{{invoiceId}}/update/proforma",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "payments",
+            "{{invoiceId}}",
+            "update",
+            "proforma"
+          ]
+        },
+        "description": "Updates the selected proforma invoice before payment is initiated.\n\nRun this after **Get the latest proforma**, using the same Postman environment.\n\n**Prerequisites**\n\n- `billing_url` points to the Billing service.\n    \n- `invoiceId` identifies the proforma retrieved in the previous step.\n    \n- The invoice is still in the proforma state."
+      },
+      "response": [
+        {
+          "name": "Proforma updated",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/payments/{{invoiceId}}/update/proforma",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{{invoiceId}}",
+                "update",
+                "proforma"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:03:51 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"expirationDate\": \"2026-10-06T11:00:00\",\n  \"discountPercentage\": \"Percentage[value=5.00]\",\n  \"basePrice\": \"50.0000\",\n  \"currency\": \"USD\",\n  \"totalAmount\": \"52.2500\",\n  \"refundAmount\": \"0.0000\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Initiate payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\n// Assuming your API returns something like { \"clientSecret\": \"pi_123_secret_ABC\" }\r\nvar fullSecret = jsonData.clientSecret; \r\nvar paymentId = jsonData.paymentId;\r\n\r\n// Split the string at '_secret_' and grab the first part (the PaymentIntent ID)\r\nvar paymentIntentId = fullSecret.split('_secret_')[0];\r\n\r\n// Save both variables so we can use them in the webhook!\r\npm.environment.set(\"paymentIntentId\", paymentIntentId);\r\npm.environment.set(\"clientSecret\", fullSecret);\r\npm.environment.set(\"paymentId\", paymentId);\r\n\r\nvar amountInCents = jsonData.amount; \r\npm.environment.set(\"amountInCents\", amountInCents);\r\n\r\n"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/payments/{{invoiceId}}/initiate/payment",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "payments",
+            "{{invoiceId}}",
+            "initiate",
+            "payment"
+          ]
+        },
+        "description": "Initiates payment for the selected appointment invoice.\n\nRun this after **Update proforma**, using the same Postman environment.\n\n**Prerequisites**\n\n- The Billing service is running with Stripe test-mode configuration.\n    \n- `invoiceId` identifies the proforma invoice from the previous steps.\n    \n\n**Request**  \nUses `invoiceId` in the URL. No request body is required.\n\n**Expected outcome**  \nThe backend initiates payment and returns payment details, including `paymentId`, `clientSecret`, and `amount`.\n\n**Script**  \nThe post-response script saves:\n\n- `paymentId` for querying the payment record.\n    \n- `clientSecret` for the payment confirmation step.\n    \n- `paymentIntentId`, extracted from the client secret.\n    \n- `amountInCents`, copied from the response’s `amount` field.\n    \n\nA successful response means payment was initiated; it does not mean the payment has succeeded.\n\n**Manual step: complete the test payment**\n\nThis demo uses the Stripe CLI to confirm payment because the project does not include a checkout UI.\n\nBefore proceeding:\n\n- Configure the Stripe CLI to use the same Stripe test account or sandbox as the Billing service.\n    \n- Keep the webhook listener running and forwarding payment events to Billing.\n    \n- Ensure Billing’s webhook signing secret matches the listener’s configuration.\n    \n\nAfter initiating payment:\n\n1. Copy `paymentIntentId` from the selected Postman environment. The post-response script already extracts it from `clientSecret`.\n    \n2. Replace `pi_YOUR_PAYMENT_INTENT_ID` in the following command with that value, then run it in your terminal:\n    \n\n```\nstripe payment_intents confirm pi_YOUR_PAYMENT_INTENT_ID -d payment_method=pm_card_visa\n\n ```\n\nUse the Stripe PaymentIntent ID beginning with `pi_`, rather than the application’s internal `paymentId` or the full client secret.\n\n1. Check that Stripe returns `status: succeeded`.\n    \n2. Allow the webhook to reach Billing, then run **Get the ledger** and **Get the invoice result** to verify the application’s updated state.\n    \n\nThis command uses a Stripe test payment method; no real payment is collected.\n\n**Alternative scenario: declined payment**\n\nTo demonstrate a failed payment, create a fresh appointment and proforma invoice, then run the payment flow through **Initiate payment**.\n\nCopy the new `paymentIntentId` from your Postman environment and run:\n\n```\nstripe payment_intents confirm pi_YOUR_PAYMENT_INTENT_ID -d payment_method=pm_card_chargeDeclined\n\n ```\n\nReplace the placeholder with the actual PaymentIntent ID. Use the same Stripe test account or sandbox as Billing, and keep the webhook listener running.\n\nThe command intentionally produces a card-declined error. After Billing processes the failure webhook, run **Get the ledger** and **Get the invoice result** to inspect the resulting states.\n\nUse a new PaymentIntent for this scenario; an already successful payment cannot be changed into a declined payment."
+      },
+      "response": [
+        {
+          "name": "Initiate payment",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/payments/{{invoiceId}}/initiate/payment",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{{invoiceId}}",
+                "initiate",
+                "payment"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:13:04 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"paymentId\": \"56488a51-a6f3-4796-ac9a-3b3c7861fe94\",\n  \"amount\": 5225,\n  \"currency\": \"USD\",\n  \"paymentDurationWindow\": \"2026-10-01T13:14:02.846133986\",\n  \"paymentType\": \"PAYMENT_DEDUCTION\",\n  \"invoiceStatus\": \"PAYMENT_PENDING\",\n  \"paymentStatus\": \"PENDING\",\n  \"clientSecret\": \"REDACTED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get the ledger",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/payments/{{paymentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "payments",
+            "{{paymentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the current status of a payment record from the Billing service.\n\nRun this after **Initiate payment** and the manual Stripe CLI confirmation step, using the same Postman environment.\n\n**Prerequisites**\n\n- `billing_url` points to the Billing service.\n    \n- `paymentId` was saved by the **Initiate payment** request.\n    \n- Stripe webhook forwarding is running so Billing can receive the payment outcome.\n    \n\n**Request**  \nUses the application’s internal `paymentId` in the URL, not Stripe’s `paymentIntentId`. No request body is required.\n\n**Expected outcomes**\n\n- Successful payment: `paymentStatus: SUCCESS`.\n    \n- Declined payment: `paymentStatus: FAILED`.\n    \n\nThe response also includes the payment ID, payment type, amount, and currency. In the saved USD examples, the amount is expressed in dollars.\n\nWebhook processing is asynchronous. If the payment still shows \\`PENDING"
+      },
+      "response": [
+        {
+          "name": "Payment recorded successfully",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/payments/{{paymentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "payments",
+                "{{paymentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:20:31 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"paymentId\": \"56488a51-a6f3-4796-ac9a-3b3c7861fe94\",\n  \"paymentType\": \"PAYMENT_DEDUCTION\",\n  \"paymentStatus\": \"SUCCESS\",\n  \"amount\": 52.25,\n  \"currency\": \"USD\"\n}"
+        },
+        {
+          "name": "Payment failed",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/payments/{{paymentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "payments",
+                "{{paymentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:38:38 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"paymentId\": \"6f8e1baf-6819-4ec4-a939-de9894576aaf\",\n  \"paymentType\": \"PAYMENT_DEDUCTION\",\n  \"paymentStatus\": \"FAILED\",\n  \"amount\": 49.5,\n  \"currency\": \"USD\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get the invoice result",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/{{invoiceId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "{{invoiceId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the current status of the invoice associated with the payment.\n\nRun this after confirming the test payment through the Stripe CLI and checking its ledger record.\n\n**Prerequisites**\n\n- `billing_url` points to the Billing service.\n    \n- `invoiceId` identifies the invoice used throughout this payment flow.\n    \n\n**Request**  \nUses `invoiceId` in the URL. No request body is required.\n\n**Expected outcome**  \nAfter Billing processes the successful payment, the response contains `invoiceStatus: PAID`, together with the invoice, doctor, patient, and appointment identifiers.\n\nIf the invoice still shows payment pending immediately after confirmation, wait briefly and query again.\n\nThis completes the payment flow: initiating payment, confirming it through Stripe, and verifying the resulting payment and invoice states.\n\n**Invoice state after a declined payment**\n\nA declined payment does not immediately reset the invoice. The invoice remains in `PAYMENT_PENDING` while its payment window is active, preserving the quoted price for a retry.\n\nFor this demo, the payment window is configured to one minute. After the window expires and expiration processing runs, the invoice returns to its draft state.\n\nTo observe both states, query **Get the invoice result** immediately after the decline, then query again after the payment window has expired."
+      },
+      "response": [
+        {
+          "name": "Invoice paid",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/{{invoiceId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "{{invoiceId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:24:32 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"invoiceStatus\": \"PAID\"\n}"
+        },
+        {
+          "name": "grace period active",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/{{invoiceId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "{{invoiceId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:39:04 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"80ab5465-5e31-4ae9-a45d-97b366ec7989\",\n  \"doctorId\": \"doc-775c52fe-c7fe-40f2-9174-f4356c771faa\",\n  \"patientId\": \"pat-a1303b37-c293-48e1-b12e-9ae1d07fd4ea\",\n  \"appointmentId\": \"508b5f31-95ce-495d-bc43-c6e13c886ba8\",\n  \"invoiceStatus\": \"PAYMENT_PENDING\"\n}"
+        },
+        {
+          "name": "grace period elapsed",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/{{invoiceId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "{{invoiceId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 13:44:14 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"80ab5465-5e31-4ae9-a45d-97b366ec7989\",\n  \"doctorId\": \"doc-775c52fe-c7fe-40f2-9174-f4356c771faa\",\n  \"patientId\": \"pat-a1303b37-c293-48e1-b12e-9ae1d07fd4ea\",\n  \"appointmentId\": \"508b5f31-95ce-495d-bc43-c6e13c886ba8\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    }
+  ]
+}

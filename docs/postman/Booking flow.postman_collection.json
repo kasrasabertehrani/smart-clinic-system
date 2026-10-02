@@ -1,0 +1,490 @@
+{
+  "info": {
+    "_postman_id": "44d25379-73d6-4ceb-aa4e-1d7cbb45cb0c",
+    "name": "Booking flow",
+    "description": "This collection demonstrates the appointment booking workflow across the Scheduling and Billing services.\n\nRun the requests in this order:\n\n1. Set a working schedule for the doctor.\n    \n2. Create the doctor's pricing profile.\n    \n3. Book an appointment.\n    \n4. Query the draft invoice associated with the appointment.\n    \n\nExpected outcome: a scheduled appointment and an associated draft invoice. Payment is handled separately in the Payment flow collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Set a working schedule",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Generates a random UUID for this test run\r\npm.environment.set(\"doctorId\", \"doc-\" + pm.variables.replaceIn('{{$guid}}'));\r\n"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"validFrom\": \"2026-10-06\",\r\n  \"shifts\": {\r\n    \"MONDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:30:00\"}],\r\n    \"TUESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"WEDNESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"}],\r\n    \"THURSDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"FRIDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"},{\"startTime\": \"15:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"SATURDAY\": [],\r\n    \"SUNDAY\": []\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/schedules",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "calendars",
+            "{{doctorId}}",
+            "schedules"
+          ]
+        },
+        "description": "Sets the doctor’s weekly working hours in the Scheduling service. Run this request first in the Booking flow.\n\n**Before sending**\n\n- Start the Scheduling service and its required infrastructure.\n    \n- Select your local Postman environment.\n    \n- Set `scheduling_url` to the Scheduling service’s base URL, such as `http://localhost:8080`.\n    \n\n**Doctor identifier**\n\nThe pre-request script generates a new test `doctorId` and saves it in the selected environment. Later requests use this identifier to create the pricing profile and book an appointment for the same doctor.\n\nSending this request again generates a different doctor ID and starts a new test setup.\n\n**Request body**\n\n- `validFrom`: the date from which the weekly schedule applies and it must be roday or in the future.\n    \n- `shifts`: working periods for each weekday, with `startTime` and `endTime`.\n    \n- An empty list means the doctor does not work that day.\n    \n- Multiple periods allow breaks between shifts.\n    \n\n**Expected result**\n\n`201 Created`, with the saved schedule in the response.\n\nThe appointment booked later must be on or after `validFrom`, and its full duration must fit within a working period.\n\n**Next step**\n\nRun **Create pricing profile** using the same environment and generated `doctorId`."
+      },
+      "response": [
+        {
+          "name": "Working schedule created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"validFrom\": \"2026-10-06\",\r\n  \"shifts\": {\r\n    \"MONDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:30:00\"}],\r\n    \"TUESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"WEDNESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"}],\r\n    \"THURSDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"FRIDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"},{\"startTime\": \"15:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"SATURDAY\": [],\r\n    \"SUNDAY\": []\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/schedules",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "calendars",
+                "{{doctorId}}",
+                "schedules"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:26:13 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"validFrom\": \"2026-10-06\",\n  \"newWeeklySchedule\": {\n    \"MONDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"17:30:00\"\n      }\n    ],\n    \"TUESDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"17:00:00\"\n      }\n    ],\n    \"WEDNESDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"12:00:00\"\n      }\n    ],\n    \"THURSDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"17:00:00\"\n      }\n    ],\n    \"FRIDAY\": [\n      {\n        \"startTime\": \"09:00:00\",\n        \"endTime\": \"12:00:00\"\n      },\n      {\n        \"startTime\": \"15:00:00\",\n        \"endTime\": \"17:00:00\"\n      }\n    ],\n    \"SATURDAY\": [],\n    \"SUNDAY\": []\n  },\n  \"canceledAppointments\": []\n}"
+        },
+        {
+          "name": "Invalid working schedule",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"validFrom\": \"2026-09-06\",\r\n  \"shifts\": {\r\n    \"MONDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:30:00\"}],\r\n    \"TUESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"WEDNESDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"}],\r\n    \"THURSDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"FRIDAY\": [{\"startTime\": \"09:00:00\", \"endTime\": \"12:00:00\"},{\"startTime\": \"15:00:00\", \"endTime\": \"17:00:00\"}],\r\n    \"SATURDAY\": [],\r\n    \"SUNDAY\": []\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/calendars/{{doctorId}}/schedules",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "calendars",
+                "{{doctorId}}",
+                "schedules"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:43:18 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"status\": 400,\n  \"message\": \"validFrom: Effective date must be today or in the future\",\n  \"timestamp\": \"2026-10-01T12:43:18.328390136\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create pricing profile",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"doctorId\": \"{{doctorId}}\",\r\n  \"currency\": \"USD\",\r\n  \"hourlyRate\": 50.00\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{billing_url}}/api/profile/create",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "profile",
+            "create"
+          ]
+        },
+        "description": "Creates a doctor’s pricing profile in the Billing service.\n\nRun this after **Set a working schedule**, using the same Postman environment. The request uses the `doctorId` generated by that earlier step.\n\n**Prerequisites**\n\n- The Billing service and its required infrastructure are running.\n    \n- `billing_url` points to the Billing service.\n    \n- `doctorId` is set in the selected environment.\n    \n\n**Request body**\n\n- `doctorId`: the doctor whose pricing profile is being created.\n    \n- `currency`: the currency used for billing; this example uses `USD`.\n    \n- `hourlyRate`: the doctor’s hourly rate; this example uses `50`.\n    \n\nThis profile supplies the pricing information for billing the doctor’s appointments."
+      },
+      "response": [
+        {
+          "name": "Pricing profile created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"doctorId\": \"{{doctorId}}\",\r\n  \"currency\": \"USD\",\r\n  \"hourlyRate\": 50.00\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{billing_url}}/api/profile/create",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "profile",
+                "create"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:33:19 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"HourlyRate\": \"50.0000\",\n  \"currency\": \"USD\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Book an appointment",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set(\"patientId\", \"pat-\" + pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Parse the JSON response\r\nvar jsonData = pm.response.json();\r\n\r\n// Save the new appointment ID to your environment\r\npm.environment.set(\"appointmentId\", jsonData.appointmentId); \r\n"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"doctorId\": \"{{doctorId}}\",\r\n    \"patientId\": \"{{patientId}}\",\r\n    \"appointmentDate\": \"2026-10-06\",\r\n    \"startTime\": \"13:00:00\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{scheduling_url}}/api/appointments",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ]
+        },
+        "description": "Books an appointment for a patient with the doctor configured in the previous steps.\n\nRun this after **Set a working schedule** and **Create pricing profile**, using the same Postman environment.\n\n**Prerequisites**\n\n- The Scheduling and Billing services and their required infrastructure are running.\n    \n- `scheduling_url` points to the Scheduling service.\n    \n- `doctorId` identifies the doctor configured in the previous steps.\n    \n\n**Request body**\n\n- `doctorId`: the doctor receiving the booking.\n    \n- `patientId`: a patient identifier generated by the pre-request script.\n    \n- `appointmentDate`: a future date on or after the schedule’s `validFrom` date.\n    \n- `startTime`: an available time within the doctor’s working hours. The full appointment must fit within a working shift.\n    \n\n**Scripts**  \nThe pre-request script generates and stores a new `patientId`. After a successful booking, the post-response script saves the returned `appointmentId` for subsequent requests.\n\n**Expected outcome**  \nThe appointment is created. Billing processes the booking event asynchronously to create its draft invoice."
+      },
+      "response": [
+        {
+          "name": "Appointment booked",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"doctorId\": \"{{doctorId}}\",\r\n    \"patientId\": \"{{patientId}}\",\r\n    \"appointmentDate\": \"2026-10-06\",\r\n    \"startTime\": \"13:00:00\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/appointments",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:35:16 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentDate\": \"2026-10-06\",\n  \"startTime\": \"13:00:00\",\n  \"endTime\": \"14:00:00\",\n  \"appointmentStatus\": \"SCHEDULED\"\n}"
+        },
+        {
+          "name": "Slot already taken",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"doctorId\": \"{{doctorId}}\",\r\n    \"patientId\": \"{{patientId}}\",\r\n    \"appointmentDate\": \"2026-10-06\",\r\n    \"startTime\": \"13:00:00\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/appointments",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:41:31 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"status\": 400,\n  \"message\": \"Cannot book: This time slot is already taken.\",\n  \"timestamp\": \"2026-10-01T12:41:31.921715931\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Query draft invoice",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentId}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice status for the appointment created in the previous step.\n\n**Prerequisites**\n\n- The Billing service and its required infrastructure are running.\n    \n- `billing_url` points to the Billing service.\n    \n- `appointmentId` was saved by the **Book an appointment** request.\n    \n\n**Request**  \nUses `appointmentId` in the URL to query the associated invoice. No request body is required.\n\n**Expected outcome**  \nThe response shows that a draft invoice exists for the appointment.\n\nInvoice creation happens asynchronously after Billing receives the booking event. If the invoice is not available immediately, wait briefly and send this query again.\n\nThis completes the booking flow: configuring the doctor’s schedule and pricing, booking an appointment, and verifying the resulting proforma invoice."
+      },
+      "response": [
+        {
+          "name": "draft invoice created",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentId}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentId}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 12:39:13 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

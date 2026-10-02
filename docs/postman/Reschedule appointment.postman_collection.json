@@ -1,0 +1,343 @@
+{
+  "info": {
+    "_postman_id": "f0346bfa-9574-44ae-b46e-d4cf84a0a361",
+    "name": "Reschedule appointment",
+    "description": "Demonstrates patient-initiated rescheduling of an active appointment and the billing outcome for both the original and replacement appointments.\n\n**Prerequisites**\n\n- The Scheduling and Billing services and their required infrastructure are running.\n    \n- The selected environment contains `scheduling_url` and `billing_url`.\n    \n- An active appointment eligible for rescheduling exists.\n    \n- The requested new slot is available, fits within the doctor’s working hours, and does not overlap an unavailable period.\n    \n- For a paid-appointment scenario, keep Stripe webhook forwarding active.\n    \n\n**Request order**\n\n1. **Get the latest active appointment** — retrieve the original appointment and save its ID as `appointmentIdOld`.\n    \n2. **Reschedule appointment** — request a new date and time with `cancelInitiator` set to `PATIENT`; save the returned appointment ID as `appointmentIdNew`.\n    \n3. **Get invoice status Old** — inspect billing for the original appointment.\n    \n4. **Get invoice status New** — inspect billing for the replacement appointment.\n    \n\nThe scripts store `appointmentIdOld` and `appointmentIdNew` as collection variables.\n\nBilling processes appointment events asynchronously. Allow time for processing before checking the resulting invoice states.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57059525"
+  },
+  "item": [
+    {
+      "name": "Get the latest active appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\npm.collectionVariables.set(\"appointmentIdOld\", jsonData.appointmentId); \r\n"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{scheduling_url}}/api/queries/appointments/latest",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "appointments",
+            "latest"
+          ]
+        },
+        "description": "Retrieves the latest appointment from the Scheduling service.\n\n**Script**  \nThe post-response script saves the returned `appointmentId` as the collection variable `appointmentIdOld`.\n\nVerify that the returned appointment is the active appointment you intend to reschedule. Keep this ID unchanged afterward so the original appointment’s invoice can be queried.\n\n**Next step:** Reschedule appointment."
+      },
+      "response": [
+        {
+          "name": "Appointment before rescheduling",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{scheduling_url}}/api/queries/appointments/latest",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "appointments",
+                "latest"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 16:48:21 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentDate\": \"2026-10-06\",\n  \"startTime\": \"13:00:00\",\n  \"endTime\": \"14:00:00\",\n  \"appointmentStatus\": \"SCHEDULED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Reschedule appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();\r\n\r\npm.collectionVariables.set(\"appointmentIdNew\", jsonData.appointmentId); "
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"appointmentDate\": \"2026-10-20\",\r\n    \"startTime\": \"11:00:00\",\r\n    \"cancelInitiator\": \"PATIENT\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{scheduling_url}}/api/appointments/{{appointmentIdOld}}/reschedule/active",
+          "host": [
+            "{{scheduling_url}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "{{appointmentIdOld}}",
+            "reschedule",
+            "active"
+          ]
+        },
+        "description": "Reschedules the selected active appointment at the patient’s request.\n\nRun **Get the latest active appointment** first to populate the collection variable `appointmentIdOld`.\n\n**Request body**\n\n- `appointmentDate`: the requested new appointment date.\n    \n- `startTime`: the requested new start time.\n    \n- `cancelInitiator`: `PATIENT` for this scenario.\n    \n\nThe new slot must be available, fit within the doctor’s working hours, and not overlap an unavailable period.\n\n**Expected outcome**  \nThe original appointment is cancelled as part of rescheduling, and a replacement appointment is created for the requested slot.\n\n**Script**  \nThe post-response script saves the returned appointment ID as the collection variable `appointmentIdNew`, preserving `appointmentIdOld` for comparison.\n\n**Next steps:** Query **Get invoice status Old** and **Get invoice status New** to inspect the billing outcome for both appointments."
+      },
+      "response": [
+        {
+          "name": "Rescheduled appointment",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"appointmentDate\": \"2026-10-20\",\r\n    \"startTime\": \"11:00:00\",\r\n    \"cancelInitiator\": \"PATIENT\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{scheduling_url}}/api/appointments/{{appointmentIdOld}}/reschedule/active",
+              "host": [
+                "{{scheduling_url}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentIdOld}}",
+                "reschedule",
+                "active"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 16:49:03 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"appointmentId\": \"272abd1c-a2d9-45d8-88ac-99a903a4085a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentDate\": \"2026-10-20\",\n  \"startTime\": \"11:00:00\",\n  \"endTime\": \"12:00:00\",\n  \"appointmentStatus\": \"SCHEDULED\",\n  \"rescheduledId\": \"a4e17791-882b-418c-a271-28fc06178d19\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get invoice status Old",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentIdOld}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentIdOld}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice status for the original appointment after rescheduling.\n\n**Request**  \nUses the collection variable `appointmentIdOld` in the URL. No request body is required.\n\n**Expected outcome**  \nThe response shows how Billing handled the original appointment’s cancellation. The old appointment eventually is refunded if it was paid for or cancelled.\n\nProcessing is asynchronous. If the previous invoice state is still shown, wait briefly and query again.\n\n**Next step:** Get invoice status New."
+      },
+      "response": [
+        {
+          "name": "Original invoice — refunded",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentIdOld}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentIdOld}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 16:49:46 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"8b179726-bd02-4a3c-a8f9-df659358746a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentId\": \"a4e17791-882b-418c-a271-28fc06178d19\",\n  \"invoiceStatus\": \"REFUNDED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get invoice status New",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentIdNew}}/status",
+          "host": [
+            "{{billing_url}}"
+          ],
+          "path": [
+            "api",
+            "queries",
+            "invoices",
+            "appointment",
+            "{{appointmentIdNew}}",
+            "status"
+          ]
+        },
+        "description": "Retrieves the invoice status for the replacement appointment created by rescheduling.\n\n**Request**  \nUses the collection variable `appointmentIdNew`, saved by the rescheduling request. No request body is required.\n\n**Expected outcome**  \nAfter Billing processes the replacement booking, the response contains a new invoice with `invoiceStatus: DRAFT`. Its `appointmentId` matches the replacement appointment.\n\nIn this example, the original invoice was refunded and a separate draft invoice was created for the replacement. The original payment was not transferred to the new invoice.\n\nInvoice creation is asynchronous. If it is not yet available, wait briefly and query again.\n\nCompare the response’s `appointmentId` with the replacement appointment ID to confirm that the invoice belongs to the new booking."
+      },
+      "response": [
+        {
+          "name": "Replacement invoice — draft",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billing_url}}/api/queries/invoices/appointment/{{appointmentIdNew}}/status",
+              "host": [
+                "{{billing_url}}"
+              ],
+              "path": [
+                "api",
+                "queries",
+                "invoices",
+                "appointment",
+                "{{appointmentIdNew}}",
+                "status"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 01 Oct 2026 16:51:22 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"invoiceId\": \"814b8bea-9585-49ec-bc3b-8a821c6dc18a\",\n  \"doctorId\": \"doc-b6d51c73-086a-47a8-aefc-8bc5c40c93c0\",\n  \"patientId\": \"pat-13b5b567-6278-4901-8c20-66eec4c85360\",\n  \"appointmentId\": \"272abd1c-a2d9-45d8-88ac-99a903a4085a\",\n  \"invoiceStatus\": \"DRAFT\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "appointmentIdOld",
+      "value": ""
+    },
+    {
+      "key": "appointmentIdNew",
+      "value": ""
+    }
+  ]
+}
